@@ -1,0 +1,28 @@
+export const _Icon = {
+    "icon-sidebar-1": "/icon/sidebar/icon-sidebar (1).svg",
+    "icon-sidebar-2": "/icon/sidebar/icon-sidebar (2).svg",
+    "icon-sidebar-3": "/icon/sidebar/icon-sidebar (3).svg",
+    "icon-sidebar-4": "/icon/sidebar/icon-sidebar (4).svg",
+    "icon-sidebar-5": "/icon/sidebar/icon-sidebar (5).svg",
+    "icon-sidebar-6": "/icon/sidebar/icon-sidebar (6).svg",
+
+    // common
+    "icon-logout": "/icon/common/icon-logout.svg",
+    "icon-wallet": "/icon/common/icon-wallet.svg",
+    "icon-search": "/icon/common/icon-search.svg",
+    "icon-calendar": "/icon/common/icon-calendar.svg",
+    "icon-info": "/icon/common/icon-info.svg",
+    "icon-close": "/icon/common/icon-close.svg",
+    "icon-copy": "/icon/common/icon-copy.svg",
+    "icon-check-graund": "/icon/common/icon-check-graund.svg",
+    "icon-coin": "/icon/common/icon-coin.svg",
+    "icon-eye-close": "/icon/common/icon-eye-close.svg",
+    "icon-eye": "/icon/common/icon-eye.svg",
+    "icon-info-red": "/icon/common/icon-info-red.svg",
+    "icon-login": "/icon/common/icon-login.svg",
+    "icon-pencil": "/icon/common/icon-pencil.svg",
+    "icon-sort": "/icon/common/icon-sort.svg",
+    "icon-trash": "/icon/common/icon-trash.svg",
+    "icon-user-search": "/icon/common/icon-user-search.svg",
+    "icon-gold-gate": "/icon/common/icon-gold-gate.svg",
+};
