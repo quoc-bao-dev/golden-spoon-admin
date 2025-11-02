@@ -31,6 +31,10 @@ export const TopupPage = () => {
     const { data: depositRequest } = useDepositRequestQuery();
 
     console.log("depositRequest", depositRequest);
+    console.log(
+        "[qr_code_url]",
+        depositRequest?.data.bank_info.qr_code_url + "&amount=" + amount || ""
+    );
 
     const handleCopy = async (text: string, label: string) => {
         const success = await copyToClipboard(text);
@@ -256,11 +260,11 @@ export const TopupPage = () => {
                                     level="H"
                                     className="w-[220px] h-[220px] rounded-lg"
                                 />
-                                <Box className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                {/* <Box className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                     <Box className="bg-white rounded-lg shadow-md p-1 flex items-center justify-center">
                                         <Icon icon="icon-gold-gate" size={40} />
                                     </Box>
-                                </Box>
+                                </Box> */}
                             </Box>
                             <Text size="sm" ta="center" mt={12}>
                                 Sử dụng{" "}
