@@ -1,6 +1,15 @@
 "use client";
 
 import {
+    Icon,
+    ImageCmp,
+    QRCode,
+    showErrorToast,
+    showSuccessToast,
+} from "@/core/components/ui";
+import { copyToClipboard } from "@/core/util";
+import { useDepositRequestQuery } from "@/service/deposits";
+import {
     ActionIcon,
     Box,
     Button,
@@ -8,27 +17,20 @@ import {
     Divider,
     Grid,
     Group,
-    Input,
-    Radio,
     Stack,
     Text,
-    Title,
     Tooltip,
 } from "@mantine/core";
-import { showErrorToast, showSuccessToast } from "@/core/components/ui";
-import { useState, useMemo } from "react";
-import {
-    ClearableTextInput,
-    Icon,
-    ImageCmp,
-    QRCode,
-} from "@/core/components/ui";
-import { copyToClipboard } from "@/core/util";
+import { useMemo, useState } from "react";
 
 const presetAmounts = [50000, 100000, 200000, 500000];
 
 export const TopupPage = () => {
-    const [amount, setAmount] = useState("");
+    const [amount, setAmount] = useState<number>(presetAmounts[0]);
+
+    const { data: depositRequest } = useDepositRequestQuery();
+
+    console.log("depositRequest", depositRequest);
 
     const handleCopy = async (text: string, label: string) => {
         const success = await copyToClipboard(text);
@@ -39,33 +41,13 @@ export const TopupPage = () => {
         }
     };
 
-    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setAmount(e.currentTarget.value);
-    };
-
-    const handleAmountClear = () => {
-        setAmount("");
-    };
-
     const handlePresetClick = (presetAmount: number) => {
-        setAmount(presetAmount.toLocaleString());
+        setAmount(presetAmount);
     };
 
     // Generate QR code data for payment
     // Format: VietQR standard or simple payment info
     const qrCodeData = useMemo(() => {
-        const accountNumber = "VORQAEXOZ4971";
-        const accountName = "VU HAI NAM";
-        const content = "ASDFQHJKL6988";
-        const amountValue = amount.replace(/[^\d]/g, ""); // Remove non-numeric chars
-
-        // Simple format: Can be replaced with VietQR format if needed
-        // VietQR format: 00020101021238570010A00000077501108MB2C5514770208QRIBFTTA53037045406{amount}5802VN62{length}{content}6304{CRC}
-        // if (amountValue) {
-        //     // Format: Account|Name|Amount|Content
-        //     return `${accountNumber}|${accountName}|${amountValue}|${content}`;
-        // }
-        // Return basic info when no amount
         return `facebook.com`;
     }, [amount]);
 
@@ -98,7 +80,12 @@ export const TopupPage = () => {
                                         />
                                     </Box>
                                     <Box className="flex-1 min-w-0">
-                                        <Text fw={600}>MB Bank</Text>
+                                        <Text fw={600}>
+                                            {
+                                                depositRequest?.data.bank_info
+                                                    .bank_name
+                                            }
+                                        </Text>
                                         <Text size="sm" c="gray.4">
                                             Ngân hàng quân đội - Chi nhánh TP
                                             HCM
@@ -112,14 +99,21 @@ export const TopupPage = () => {
                                     Số tài khoản
                                 </Text>
                                 <Group align="center" justify="space-between">
-                                    <Text fw={600}>VORQAEXOZ4971</Text>
+                                    <Text fw={600}>
+                                        {
+                                            depositRequest?.data.bank_info
+                                                .account_number
+                                        }
+                                    </Text>
                                     <Tooltip label="Sao chép số tài khoản">
                                         <ActionIcon
                                             variant="subtle"
                                             size="lg"
                                             onClick={() =>
                                                 handleCopy(
-                                                    "VORQAEXOZ4971",
+                                                    depositRequest?.data
+                                                        .bank_info
+                                                        .account_number || "",
                                                     "Số tài khoản"
                                                 )
                                             }
@@ -135,14 +129,21 @@ export const TopupPage = () => {
                                     Tên chủ tài khoản
                                 </Text>
                                 <Group align="center" justify="space-between">
-                                    <Text fw={600}>VU HAI NAM</Text>
+                                    <Text fw={600}>
+                                        {
+                                            depositRequest?.data.bank_info
+                                                .account_owner
+                                        }
+                                    </Text>
                                     <Tooltip label="Sao chép tên chủ tài khoản">
                                         <ActionIcon
                                             variant="subtle"
                                             size="lg"
                                             onClick={() =>
                                                 handleCopy(
-                                                    "VU HAI NAM",
+                                                    depositRequest?.data
+                                                        .bank_info
+                                                        .account_owner || "",
                                                     "Tên chủ tài khoản"
                                                 )
                                             }
@@ -154,25 +155,30 @@ export const TopupPage = () => {
                             </Stack>
                             <Divider color="gray.2" variant="dashed" />
                             <Stack gap="sm">
-                                <div className="flex flex-col gap-2">
+                                <Box className="flex flex-col gap-2">
                                     <Text size="sm" c="gray.6">
-                                        Nhập số tiền (đ)
+                                        Chọn số tiền (đ)
                                     </Text>
-                                    <ClearableTextInput
-                                        placeholder="69,000 đ"
-                                        value={amount}
-                                        onChange={handleAmountChange}
-                                        onClear={handleAmountClear}
-                                    />
-                                </div>
+                                    <Box className="px-3 py-2 border border-gray-200 rounded-md bg-gray-50">
+                                        <Text fw={600} size="lg">
+                                            {amount.toLocaleString()} đ
+                                        </Text>
+                                    </Box>
+                                </Box>
                                 <Group gap="xs" wrap="wrap">
                                     {presetAmounts.map((v) => (
                                         <Button
                                             key={v}
-                                            variant="light"
+                                            variant={
+                                                amount === v
+                                                    ? "filled"
+                                                    : "light"
+                                            }
                                             size="xs"
-                                            c={"gray"}
-                                            color="gray.5"
+                                            c={amount === v ? "white" : "gray"}
+                                            color={
+                                                amount === v ? "blue" : "gray.5"
+                                            }
                                             fw={600}
                                             onClick={() => handlePresetClick(v)}
                                         >
@@ -180,10 +186,12 @@ export const TopupPage = () => {
                                         </Button>
                                     ))}
                                 </Group>
-                                <div className="text-sm text-blue-500 bg-blue-50 rounded-md p-2 flex gap-2 items-center border border-blue-500 ">
+                                <Box className="text-sm text-blue-500 bg-blue-50 rounded-md p-2 flex gap-2 items-center border border-blue-500 ">
                                     <Icon icon="icon-info" size={18} />{" "}
-                                    <p>Nạp tối thiểu 50,000 đ</p>
-                                </div>
+                                    <Text component="span">
+                                        Nạp tối thiểu 50,000 đ
+                                    </Text>
+                                </Box>
                             </Stack>
                             <Divider color="gray.2" variant="dashed" />
 
@@ -192,14 +200,21 @@ export const TopupPage = () => {
                                     Nội dung chuyển khoản
                                 </Text>
                                 <Group align="center" justify="space-between">
-                                    <Text fw={600}>ASDFQHJKL6988</Text>
+                                    <Text fw={600}>
+                                        {
+                                            depositRequest?.data.bank_info
+                                                .transfer_content
+                                        }
+                                    </Text>
                                     <Tooltip label="Sao chép nội dung chuyển khoản">
                                         <ActionIcon
                                             variant="subtle"
                                             size="lg"
                                             onClick={() =>
                                                 handleCopy(
-                                                    "ASDFQHJKL6988",
+                                                    depositRequest?.data
+                                                        .bank_info
+                                                        .transfer_content || "",
                                                     "Nội dung chuyển khoản"
                                                 )
                                             }
@@ -229,7 +244,12 @@ export const TopupPage = () => {
                             </Group>
                             <Box className="bg-white p-3 rounded-xl shadow-sm mt-2 relative">
                                 <QRCode
-                                    value={qrCodeData}
+                                    value={
+                                        depositRequest?.data.bank_info
+                                            .qr_code_url +
+                                            "&amount=" +
+                                            amount || ""
+                                    }
                                     size={220}
                                     bgColor="#FFFFFF"
                                     fgColor="#000000"
