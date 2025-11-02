@@ -79,7 +79,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
     return (
         <AppShell
             navbar={{
-                width: collapsed ? 80 : 260,
+                width: collapsed ? 80 : 280,
                 breakpoint: "sm",
                 collapsed: { mobile: true },
             }}
