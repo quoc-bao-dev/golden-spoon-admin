@@ -100,7 +100,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
                         <ImageCmp src="logo" width={169} className="" />
                     )}
                     {collapsed && (
-                        <ImageCmp src="logo" width={40} className="" />
+                        <ImageCmp src="logo-symbol" width={32} className="" />
                     )}
                     <ActionIcon
                         variant="subtle"

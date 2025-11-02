@@ -1,6 +1,7 @@
 export const _Image = {
     "login-background": "/image/login-background.jpg",
     logo: "/image/logo.png",
+    "logo-symbol": "/image/logo-symbol.png",
     "no-data": "/image/no-data.png",
 
     //bank
