@@ -15,7 +15,7 @@ import {
     Title,
     Tooltip,
 } from "@mantine/core";
-import toast from "react-hot-toast";
+import { showErrorToast, showSuccessToast } from "@/core/components/ui";
 import { useState, useMemo } from "react";
 import {
     ClearableTextInput,
@@ -33,9 +33,9 @@ export const TopupPage = () => {
     const handleCopy = async (text: string, label: string) => {
         const success = await copyToClipboard(text);
         if (success) {
-            toast.success(`${label} đã được sao chép vào clipboard`);
+            showSuccessToast(`${label} đã được sao chép vào clipboard`);
         } else {
-            toast.error("Không thể sao chép. Vui lòng thử lại.");
+            showErrorToast("Không thể sao chép. Vui lòng thử lại.");
         }
     };
 

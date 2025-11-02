@@ -12,6 +12,7 @@ import {
     Badge,
 } from "@mantine/core";
 import { useState } from "react";
+import { showSuccessToast, showErrorToast } from "@/core/components/ui";
 
 export default function Home() {
     const [opened, setOpened] = useState(false);
@@ -154,6 +155,29 @@ export default function Home() {
                         >
                             Open Modal
                         </Button>
+
+                        <Group gap="md" mt="md">
+                            <Button
+                                color="green"
+                                variant="filled"
+                                onClick={() =>
+                                    showSuccessToast("Copied to clipboard!")
+                                }
+                            >
+                                Show Success Toast
+                            </Button>
+                            <Button
+                                color="red"
+                                variant="filled"
+                                onClick={() =>
+                                    showErrorToast(
+                                        "Không thể sao chép. Vui lòng thử lại."
+                                    )
+                                }
+                            >
+                                Show Error Toast
+                            </Button>
+                        </Group>
                     </Stack>
                 </Card>
 
@@ -224,7 +248,13 @@ export default function Home() {
                         >
                             Cancel
                         </Button>
-                        <Button color="blue" onClick={() => setOpened(false)}>
+                        <Button
+                            color="blue"
+                            onClick={() => {
+                                showSuccessToast("Xác nhận thành công!");
+                                setOpened(false);
+                            }}
+                        >
                             Confirm
                         </Button>
                     </Group>

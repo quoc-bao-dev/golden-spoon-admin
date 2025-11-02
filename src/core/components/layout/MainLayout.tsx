@@ -1,21 +1,21 @@
 "use client";
 
 import { Icon, ImageCmp } from "@/core/components/ui";
+import { _Image } from "@/core/const";
 import { useAuthAction, useAuthStore } from "@/module/auth";
 import {
+    ActionIcon,
     AppShell,
     Box,
     NavLink,
     ScrollArea,
     Text,
-    ActionIcon,
     Tooltip,
 } from "@mantine/core";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import Image from "next/image";
-import { _Image } from "@/core/const";
 
 export const MainLayout = ({ children }: { children: React.ReactNode }) => {
     const [collapsed, setCollapsed] = useState(false);
@@ -85,7 +85,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
             }}
             padding="md"
             withBorder={false}
-            className="bg-[#F5F7FB]"
+            className="bg-[#f7f7f7]"
             layout="alt"
         >
             <AppShell.Navbar className="bg-white p-4 flex flex-col">

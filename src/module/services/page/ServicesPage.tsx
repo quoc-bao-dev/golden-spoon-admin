@@ -15,8 +15,9 @@ import {
     Title,
 } from "@mantine/core";
 import { useState } from "react";
+import { CouponDetailModal } from "../components";
 
-type Coupon = {
+export type Coupon = {
     id: string;
     name: string;
     merchant: string;
@@ -31,6 +32,8 @@ const ServicesPage = () => {
     const [searchValue, setSearchValue] = useState("");
     const [activeCategory, setActiveCategory] = useState<string>("all");
     const [sortBy, setSortBy] = useState<string | null>("newest");
+    const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+    const [modalOpened, setModalOpened] = useState(false);
 
     // Mock data
     const coupons: Coupon[] = Array(16)
@@ -94,6 +97,21 @@ const ServicesPage = () => {
         { value: "lowest-price", label: "Giá thấp nhất" },
         { value: "highest-discount", label: "Giảm sâu nhất" },
     ];
+
+    const handleCouponClick = (coupon: Coupon) => {
+        setSelectedCoupon(coupon);
+        setModalOpened(true);
+    };
+
+    const handleModalClose = () => {
+        setModalOpened(false);
+        setSelectedCoupon(null);
+    };
+
+    const handleBuy = (coupon: Coupon, quantity: number) => {
+        console.log("Buy coupon:", coupon, "Quantity:", quantity);
+        // TODO: Implement buy logic
+    };
 
     return (
         <div className="h-full flex flex-col">
@@ -164,7 +182,8 @@ const ServicesPage = () => {
                             shadow="sm"
                             padding="0"
                             radius="lg"
-                            className="overflow-hidden border border-gray-200!"
+                            className="overflow-hidden border border-gray-200! cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() => handleCouponClick(coupon)}
                         >
                             {/* Coupon Visual Header */}
                             <div className="p-4 ">
@@ -219,6 +238,14 @@ const ServicesPage = () => {
                     </Text>
                 </div>
             )}
+
+            {/* Coupon Detail Modal */}
+            <CouponDetailModal
+                opened={modalOpened}
+                onClose={handleModalClose}
+                coupon={selectedCoupon}
+                onBuy={handleBuy}
+            />
         </div>
     );
 };

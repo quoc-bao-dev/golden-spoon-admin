@@ -7,6 +7,7 @@ import {
     selectConfig,
     modalConfig,
     datePickerInputConfig,
+    textConfig,
 } from "./components";
 
 export const mantineTheme = createTheme({
@@ -24,6 +25,7 @@ export const mantineTheme = createTheme({
         TextInput: textInputConfig,
         Select: selectConfig,
         Modal: modalConfig,
+        Text: textConfig,
         // DatePickerInput uses TextInput config since it extends TextInput
         DatePickerInput: datePickerInputConfig as any,
     },

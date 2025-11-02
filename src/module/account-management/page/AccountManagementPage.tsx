@@ -8,6 +8,7 @@ import {
 import {
     ActionIcon,
     Badge,
+    Box,
     Button,
     Menu,
     Select,
@@ -144,11 +145,16 @@ const AccountManagementPage = () => {
                             {row.email}
                             {row.emailVerified && (
                                 <Tooltip label="E-mail đã xác thực">
-                                    <Icon
-                                        icon="icon-check-graund"
-                                        size={20}
-                                        className="text-green-500"
-                                    />
+                                    <Box
+                                        component="span"
+                                        className="inline-flex items-center cursor-pointer"
+                                    >
+                                        <Icon
+                                            icon="icon-check-graund"
+                                            size={20}
+                                            className="text-green-500"
+                                        />
+                                    </Box>
                                 </Tooltip>
                             )}
                         </div>
@@ -166,11 +172,16 @@ const AccountManagementPage = () => {
                         <span>{row.phone}</span>
                         {row.tokenExpired && (
                             <Tooltip label="Token hết hạn, hãy đăng nhập lại">
-                                <Icon
-                                    icon="icon-info-red"
-                                    size={16}
-                                    className="text-orange-500"
-                                />
+                                <Box
+                                    component="span"
+                                    className="inline-flex items-center cursor-pointer"
+                                >
+                                    <Icon
+                                        icon="icon-info-red"
+                                        size={16}
+                                        className="text-orange-500"
+                                    />
+                                </Box>
                             </Tooltip>
                         )}
                     </div>
