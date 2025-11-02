@@ -2,15 +2,7 @@
 
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyAq8ZqnCzBvn5MfD9SE7cvl10nVDEoBWss",
-    authDomain: "vouchee-v1.firebaseapp.com",
-    projectId: "vouchee-v1",
-    storageBucket: "vouchee-v1.firebasestorage.app",
-    messagingSenderId: "605728725079",
-    appId: "1:605728725079:web:d40b31ddea6caa3ea8eb12",
-};
+import { firebaseConfig } from "@/core/config";
 
 let app: FirebaseApp;
 if (!getApps().length) {
