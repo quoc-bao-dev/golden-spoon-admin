@@ -1,6 +1,13 @@
 "use client";
 
-import { Checkbox, Pagination, ScrollArea, Select, Table } from "@mantine/core";
+import {
+    Checkbox,
+    Pagination,
+    ScrollArea,
+    Select,
+    Table,
+    Skeleton,
+} from "@mantine/core";
 import React, { useMemo, useState } from "react";
 import { Nodata } from "../Nodata";
 import { DataTableProps, GetRowId } from "./types";
@@ -137,69 +144,116 @@ export function DataTable<T>(props: DataTableProps<T>) {
                             </Table.Tr>
                         </Table.Thead>
                         <Table.Tbody>
-                            {data.map((row, rowIndex) => {
-                                const id = rowIdGetter(row, rowIndex);
-                                return (
-                                    <Table.Tr
-                                        key={id}
-                                        className="border-b! border-dashed border-gray-200!"
-                                        onClick={() =>
-                                            rowEvents?.onRowClick?.(
-                                                row,
-                                                rowIndex
-                                            )
-                                        }
-                                        style={{
-                                            cursor: rowEvents?.onRowClick
-                                                ? "pointer"
-                                                : undefined,
-                                        }}
-                                    >
-                                        <Table.Td className="text-sm text-gray-900 align-middle text-center">
-                                            {startIndex + rowIndex + 1}
-                                        </Table.Td>
-                                        {selectable && (
-                                            <Table.Td
-                                                className="align-middle"
-                                                onClick={(e) =>
-                                                    e.stopPropagation()
-                                                }
-                                            >
-                                                <Checkbox
-                                                    color="brand"
-                                                    checked={selected.includes(
-                                                        id
-                                                    )}
-                                                    onChange={() =>
-                                                        toggleRow(id)
-                                                    }
-                                                />
-                                            </Table.Td>
-                                        )}
-                                        {columns.map((col) => (
-                                            <Table.Td
-                                                key={`${id}-${col.key}`}
-                                                className={`text-sm align-middle ${
-                                                    col.align === "right"
-                                                        ? "text-right"
-                                                        : col.align === "center"
-                                                        ? "text-center"
-                                                        : "text-left"
-                                                }`}
-                                            >
-                                                {col.render
-                                                    ? col.render({
-                                                          row,
-                                                          rowIndex,
-                                                      })
-                                                    : col.accessor
-                                                    ? col.accessor(row)
-                                                    : null}
-                                            </Table.Td>
-                                        ))}
-                                    </Table.Tr>
-                                );
-                            })}
+                            {loading
+                                ? Array.from({
+                                      length: pagination.pageSize || 10,
+                                  }).map((_, rowIndex) => (
+                                      <Table.Tr
+                                          key={`skeleton-${rowIndex}`}
+                                          className="border-b! border-dashed border-gray-200!"
+                                      >
+                                          <Table.Td className="text-sm text-gray-900 align-middle text-center">
+                                              <Skeleton
+                                                  height={12}
+                                                  width={24}
+                                                  mx="auto"
+                                                  radius="xl"
+                                              />
+                                          </Table.Td>
+                                          {selectable && (
+                                              <Table.Td className="align-middle">
+                                                  <Skeleton
+                                                      height={18}
+                                                      width={18}
+                                                      radius="xl"
+                                                  />
+                                              </Table.Td>
+                                          )}
+                                          {columns.map((col, colIndex) => (
+                                              <Table.Td
+                                                  key={`skeleton-${rowIndex}-${col.key}-${colIndex}`}
+                                                  className={`text-sm align-middle ${
+                                                      col.align === "right"
+                                                          ? "text-right"
+                                                          : col.align ===
+                                                            "center"
+                                                          ? "text-center"
+                                                          : "text-left"
+                                                  }`}
+                                              >
+                                                  <Skeleton
+                                                      height={14}
+                                                      width="60%"
+                                                      radius="sm"
+                                                  />
+                                              </Table.Td>
+                                          ))}
+                                      </Table.Tr>
+                                  ))
+                                : data.map((row, rowIndex) => {
+                                      const id = rowIdGetter(row, rowIndex);
+                                      return (
+                                          <Table.Tr
+                                              key={id}
+                                              className="border-b! border-dashed border-gray-200!"
+                                              onClick={() =>
+                                                  rowEvents?.onRowClick?.(
+                                                      row,
+                                                      rowIndex
+                                                  )
+                                              }
+                                              style={{
+                                                  cursor: rowEvents?.onRowClick
+                                                      ? "pointer"
+                                                      : undefined,
+                                              }}
+                                          >
+                                              <Table.Td className="text-sm text-gray-900 align-middle text-center">
+                                                  {startIndex + rowIndex + 1}
+                                              </Table.Td>
+                                              {selectable && (
+                                                  <Table.Td
+                                                      className="align-middle"
+                                                      onClick={(e) =>
+                                                          e.stopPropagation()
+                                                      }
+                                                  >
+                                                      <Checkbox
+                                                          color="brand"
+                                                          checked={selected.includes(
+                                                              id
+                                                          )}
+                                                          onChange={() =>
+                                                              toggleRow(id)
+                                                          }
+                                                      />
+                                                  </Table.Td>
+                                              )}
+                                              {columns.map((col) => (
+                                                  <Table.Td
+                                                      key={`${id}-${col.key}`}
+                                                      className={`text-sm align-middle ${
+                                                          col.align === "right"
+                                                              ? "text-right"
+                                                              : col.align ===
+                                                                "center"
+                                                              ? "text-center"
+                                                              : "text-left"
+                                                      }`}
+                                                  >
+                                                      {col.render
+                                                          ? col.render({
+                                                                row,
+                                                                rowIndex,
+                                                            })
+                                                          : col.accessor
+                                                          ? col.accessor(row)
+                                                          : null}
+                                                  </Table.Td>
+                                              ))}
+                                          </Table.Tr>
+                                      );
+                                  })}
                         </Table.Tbody>
                     </Table>
                 </ScrollArea>

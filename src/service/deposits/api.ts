@@ -1,5 +1,10 @@
 import { axiosInstant } from "@/core/config";
-import { DepositRequestResponse, DepositRequestPayload } from "./type";
+import {
+    DepositRequestResponse,
+    DepositRequestPayload,
+    DepositHistoryParams,
+    DepositHistoryResponse,
+} from "./type";
 
 export const apiDeposits = {
     request: async (params?: DepositRequestPayload) => {
@@ -8,6 +13,14 @@ export const apiDeposits = {
             {
                 params,
             }
+        );
+        return response.data;
+    },
+
+    history: async (params?: DepositHistoryParams) => {
+        const response = await axiosInstant.get<DepositHistoryResponse>(
+            "deposits/history",
+            { params }
         );
         return response.data;
     },

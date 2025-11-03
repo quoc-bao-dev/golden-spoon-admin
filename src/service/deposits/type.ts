@@ -22,3 +22,27 @@ export type DepositRequestPayload = {
     amount?: number;
     [key: string]: any;
 };
+
+export type DepositHistoryItem = {
+    id: string;
+    amount: number;
+    status: string;
+    created_at: string;
+    [key: string]: any;
+};
+
+export type DepositHistoryParams = {
+    page?: number;
+    limit?: number;
+    [key: string]: any;
+};
+
+export type DepositHistoryResponse = {
+    data: {
+        items: DepositHistoryItem[];
+        page: number;
+        limit: number;
+        total: number;
+    };
+    message: string;
+};

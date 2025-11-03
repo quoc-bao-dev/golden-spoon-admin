@@ -186,6 +186,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
                                                         <Icon
                                                             icon={item.icon}
                                                             size={24}
+                                                            mode="dynamic"
                                                             className={
                                                                 isActive
                                                                     ? "text-[#E67700]"
@@ -202,6 +203,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
                                                     label={item.label}
                                                     leftSection={
                                                         <Icon
+                                                            mode="dynamic"
                                                             icon={item.icon}
                                                             size={24}
                                                         />

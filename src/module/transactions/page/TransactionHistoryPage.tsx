@@ -8,10 +8,11 @@ import {
     PaginationState,
     splitDateTimeLabel,
 } from "@/core/components/ui";
+import { useDepositHistoryQuery } from "@/service/deposits";
 import { Badge, Select, TextInput, Title } from "@mantine/core";
 import { DatePickerInput, DatesRangeValue } from "@mantine/dates";
 import { useSessionStorage } from "@mantine/hooks";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 const TransactionHistoryPage = () => {
     // For DateInput state
@@ -24,24 +25,6 @@ const TransactionHistoryPage = () => {
         status: string;
         code: string;
     };
-    const transactions: TransactionRow[] = [
-        {
-            date: "06/09/2025 04:20 PM",
-            type: "Mua hàng",
-            amount: 699000,
-            balance: 699000,
-            status: "Hoàn thành",
-            code: "JQKA26988",
-        },
-        ...Array(100).fill({
-            date: "06/09/2025 04:20 PM",
-            type: "Nạp tiền",
-            amount: 699000,
-            balance: 699000,
-            status: "Hoàn tiền",
-            code: "JQKA26988",
-        }),
-    ];
     const [page, setPage] = useSessionStorage<number>({
         key: "transaction-history.page",
         defaultValue: 1,
@@ -50,9 +33,22 @@ const TransactionHistoryPage = () => {
         key: "transaction-history.pageSize",
         defaultValue: 10,
     });
-    const total = transactions.length;
-    const start = (page - 1) * pageSize;
-    const pageItems = transactions.slice(start, start + pageSize);
+    const { data: historyData, isLoading } = useDepositHistoryQuery({
+        page,
+        limit: pageSize,
+    });
+
+    const rows: TransactionRow[] = useMemo(() => {
+        const items = historyData?.data.items ?? [];
+        return items.map((item) => ({
+            date: String((item as any).created_at ?? ""),
+            type: "Nạp tiền",
+            amount: Number((item as any).amount ?? 0),
+            balance: Number((item as any).balance ?? 0),
+            status: String((item as any).status ?? ""),
+            code: String((item as any).id ?? ""),
+        }));
+    }, [historyData]);
 
     type Row = TransactionRow;
     const columns: ColumnDef<Row>[] = [
@@ -128,7 +124,13 @@ const TransactionHistoryPage = () => {
         },
     ];
 
-    const pagination: PaginationState = { page, pageSize, total };
+    useDepositHistoryQuery;
+
+    const pagination: PaginationState = {
+        page,
+        pageSize,
+        total: historyData?.data.total ?? 0,
+    };
     return (
         <div className=" flex flex-col flex-1 min-h-0 h-full">
             {/* Header */}
@@ -171,7 +173,7 @@ const TransactionHistoryPage = () => {
             </div>
             {/* table */}
             <DataTable<Row>
-                data={pageItems}
+                data={rows}
                 columns={columns}
                 getRowId={(r, i) => `${r.code}-${i}`}
                 pagination={pagination}
@@ -180,6 +182,7 @@ const TransactionHistoryPage = () => {
                     setPageSize(size);
                     setPage(1);
                 }}
+                loading={isLoading}
                 emptyMessage="Chưa có lịch sử giao dịch nào."
             />
         </div>

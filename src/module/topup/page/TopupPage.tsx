@@ -247,24 +247,22 @@ export const TopupPage = () => {
                                 <ImageCmp src="napas" width={80} />
                             </Group>
                             <Box className="bg-white p-3 rounded-xl shadow-sm mt-2 relative">
-                                <QRCode
-                                    value={
+                                <img
+                                    src={
                                         depositRequest?.data.bank_info
                                             .qr_code_url +
                                             "&amount=" +
                                             amount || ""
                                     }
-                                    size={220}
-                                    bgColor="#FFFFFF"
-                                    fgColor="#000000"
-                                    level="H"
+                                    alt=""
                                     className="w-[220px] h-[220px] rounded-lg"
+                                    onError={(e) => {
+                                        const target =
+                                            e.currentTarget as HTMLImageElement;
+                                        target.onerror = null;
+                                        target.src = "/image/fallback-qr.png";
+                                    }}
                                 />
-                                {/* <Box className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <Box className="bg-white rounded-lg shadow-md p-1 flex items-center justify-center">
-                                        <Icon icon="icon-gold-gate" size={40} />
-                                    </Box>
-                                </Box> */}
                             </Box>
                             <Text size="sm" ta="center" mt={12}>
                                 Sử dụng{" "}

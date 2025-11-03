@@ -17,8 +17,13 @@ import {
     Tooltip,
 } from "@mantine/core";
 import { useSessionStorage } from "@mantine/hooks";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AddAccountModal } from "../components";
+import { useAccountsQuery } from "@/service/accounts";
+import { useDeleteAccountMutation } from "@/service/accounts";
+import { useLoginAccountMutation } from "@/service/accounts";
+import { showSuccessToast, showErrorToast } from "@/core/components/ui";
+import type { AccountAuthStatus } from "@/service/accounts";
 
 type AccountRow = {
     id: string;
@@ -28,7 +33,7 @@ type AccountRow = {
     phone: string;
     password: string;
     rewardPoints: number;
-    status: "Active" | "Banned";
+    status: AccountAuthStatus;
     tokenExpired?: boolean;
 };
 
@@ -59,7 +64,7 @@ const AccountManagementPage = () => {
             phone: "0969-886-969",
             password: "password123",
             rewardPoints: 69420,
-            status: "Active",
+            status: "active",
             tokenExpired: true,
         },
         {
@@ -70,7 +75,7 @@ const AccountManagementPage = () => {
             phone: "0969-886-969",
             password: "123789POIEWQ!@#$%",
             rewardPoints: 69420,
-            status: "Banned",
+            status: "locked",
         },
         ...Array(67)
             .fill(null)
@@ -82,7 +87,7 @@ const AccountManagementPage = () => {
                 phone: "0969-886-969",
                 password: "password123",
                 rewardPoints: 69420,
-                status: "Active" as const,
+                status: "active" as const,
             })),
     ];
 
@@ -96,18 +101,18 @@ const AccountManagementPage = () => {
 
         const matchesStatus =
             statusFilter === "Tất cả" ||
-            (statusFilter === "Active" && account.status === "Active") ||
-            (statusFilter === "Banned" && account.status === "Banned");
+            (statusFilter === "Active" && account.status === "active") ||
+            (statusFilter === "Banned" && account.status !== "active");
 
         return matchesSearch && matchesStatus;
     });
 
     const total = filteredAccounts.length;
     const bannedCount = filteredAccounts.filter(
-        (a) => a.status === "Banned"
+        (a) => a.status !== "active"
     ).length;
     const activeCount = filteredAccounts.filter(
-        (a) => a.status === "Active"
+        (a) => a.status === "active"
     ).length;
 
     const start = (page - 1) * pageSize;
@@ -124,11 +129,36 @@ const AccountManagementPage = () => {
         return `${points.toLocaleString()} G-coin`;
     };
 
-    const getStatusBadgeStyle = (status: string) => {
-        if (status === "Active") {
-            return { background: "#E6FCF5", color: "#36B37E" };
+    const getStatusBadgeStyle = (
+        status: AccountAuthStatus
+    ): { style: { background: string; color: string }; label: string } => {
+        switch (status) {
+            case "active":
+                return {
+                    style: { background: "#E6FCF5", color: "#36B37E" },
+                    label: "Active",
+                };
+            case "inactive":
+                return {
+                    style: { background: "#FFF4E6", color: "#E67700" },
+                    label: "Inactive",
+                };
+            case "locked":
+                return {
+                    style: { background: "#FFE5E5", color: "#E03131" },
+                    label: "Blocked",
+                };
+            case "login_failed":
+                return {
+                    style: { background: "#E7F5FF", color: "#1C7ED6" },
+                    label: "Login Failed",
+                };
+            default:
+                return {
+                    style: { background: "#F1F3F5", color: "#495057" },
+                    label: status,
+                };
         }
-        return { background: "#FFE5E5", color: "#E03131" };
     };
 
     type Row = AccountRow;
@@ -140,9 +170,9 @@ const AccountManagementPage = () => {
             render: ({ row }) => {
                 return (
                     <div className="flex flex-col gap-1">
-                        <div className="font-medium">{row.name}</div>
+                        <div className="font-medium">{row.name || "-"}</div>
                         <div className="flex items-center gap-1 text-xs text-gray-500">
-                            {row.email}
+                            {row.email || "-"}
                             {row.emailVerified && (
                                 <Tooltip label="E-mail đã xác thực">
                                     <Box
@@ -196,8 +226,8 @@ const AccountManagementPage = () => {
                 const isVisible = passwordVisibility[row.id];
                 return (
                     <div className="flex items-center gap-2">
-                        <span className="font-mono">
-                            {isVisible ? row.password : "**********"}
+                        <span className="font-mono min-w-[110px]">
+                            {isVisible ? row.password : "************"}
                         </span>
                         <ActionIcon
                             variant="subtle"
@@ -235,7 +265,7 @@ const AccountManagementPage = () => {
             header: "Trạng thái",
             className: "min-w-[120px]",
             render: ({ row }) => {
-                const style = getStatusBadgeStyle(row.status);
+                const { style, label } = getStatusBadgeStyle(row.status);
                 return (
                     <Badge
                         style={style}
@@ -244,7 +274,7 @@ const AccountManagementPage = () => {
                         size="md"
                         className="font-normal p-3.5! rounded-2xl!"
                     >
-                        {row.status}
+                        {label}
                     </Badge>
                 );
             },
@@ -267,6 +297,8 @@ const AccountManagementPage = () => {
                                 leftSection={
                                     <Icon icon="icon-login" size={16} />
                                 }
+                                onClick={() => handleLoginAccount(row.id)}
+                                disabled={isLoggingIn}
                             >
                                 Đăng nhập
                             </Menu.Item>
@@ -282,6 +314,8 @@ const AccountManagementPage = () => {
                                     <Icon icon="icon-trash" size={16} />
                                 }
                                 color="red"
+                                onClick={() => deleteAccount(row.id)}
+                                disabled={isDeleting}
                             >
                                 Xóa tài khoản
                             </Menu.Item>
@@ -292,7 +326,67 @@ const AccountManagementPage = () => {
         },
     ];
 
-    const pagination: PaginationState = { page, pageSize, total };
+    const { data: accountsData, isLoading } = useAccountsQuery({
+        page,
+        pageSize,
+    });
+
+    const rows: AccountRow[] = useMemo(() => {
+        if (!accountsData) return [];
+        const items = accountsData?.accounts ?? [];
+        return items.map((item) => ({
+            id: String(item.id ?? ""),
+            name: String(item.full_name ?? item.full_name ?? item.email ?? ""),
+            email: String(item.email ?? ""),
+            emailVerified: Boolean(item.email_verified ?? false),
+            phone: String(item.phone_number ?? ""),
+            password: item.password ?? "-",
+            rewardPoints: Number(item.coin_amount ?? 0),
+            status: item.auth_status,
+        }));
+    }, [accountsData]);
+
+    const serverTotal = accountsData?.total ?? total;
+    const apiPagination: PaginationState = {
+        page,
+        pageSize,
+        total: serverTotal,
+    };
+
+    const { mutate: deleteAccount, isPending: isDeleting } =
+        useDeleteAccountMutation({
+            onSuccess: () => {
+                showSuccessToast("Xóa tài khoản thành công");
+            },
+            onError: () => {
+                showErrorToast("Xóa tài khoản thất bại");
+            },
+        });
+
+    const handleDelete = () => {
+        if (selectedIds.length === 0) return;
+        selectedIds.forEach((id) => deleteAccount(id));
+        setSelectedIds([]);
+    };
+
+    const { mutate: loginAccount, isPending: isLoggingIn } =
+        useLoginAccountMutation({
+            onSuccess: () => {
+                showSuccessToast("Đăng nhập thành công");
+            },
+            onError: () => {
+                showErrorToast("Đăng nhập thất bại");
+            },
+        });
+
+    const handleLoginAccount = (ids: string | string[]) => {
+        const list = Array.isArray(ids) ? ids : [ids];
+        if (list.length === 0) {
+            showErrorToast("Vui lòng chọn tài khoản");
+            return;
+        }
+        list.forEach((id) => loginAccount(id));
+    };
 
     return (
         <div className="h-full flex flex-col">
@@ -348,7 +442,7 @@ const AccountManagementPage = () => {
                         <Button
                             leftSection="+"
                             color="brand"
-                            size="md"
+                            size="sm"
                             onClick={() => setAddAccountModalOpened(true)}
                         >
                             Thêm tài khoản
@@ -357,7 +451,7 @@ const AccountManagementPage = () => {
                 </div>
 
                 {/* Statistics and Action Buttons */}
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4 min-h-[48px]">
                     <div className="flex gap-4">
                         {/* Search Results Info */}
                         {searchValue && (
@@ -382,51 +476,64 @@ const AccountManagementPage = () => {
                         )}
                     </div>
 
-                    <div className="flex gap-2">
-                        <Button
-                            variant="default"
-                            leftSection={<Icon icon="icon-pencil" size={16} />}
-                        >
-                            Cập nhật thông tin tài khoản
-                        </Button>
-                        <Button
-                            variant="default"
-                            size="sm"
-                            leftSection={
-                                <Icon icon="icon-user-search" size={16} />
-                            }
-                        >
-                            Kiểm tra tài khoản
-                        </Button>
-                        <Button
-                            variant="default"
-                            size="sm"
-                            leftSection={<Icon icon="icon-trash" size={16} />}
-                        >
-                            Xóa tài khoản
-                        </Button>
-                        <Button
-                            variant="default"
-                            size="sm"
-                            leftSection={<Icon icon="icon-login" size={16} />}
-                        >
-                            Đăng nhập
-                        </Button>
-                    </div>
+                    {selectedIds.length > 0 && (
+                        <div className="flex gap-2">
+                            <Button
+                                variant="default"
+                                leftSection={
+                                    <Icon icon="icon-pencil" size={16} />
+                                }
+                            >
+                                Cập nhật thông tin tài khoản
+                            </Button>
+                            <Button
+                                variant="default"
+                                size="sm"
+                                leftSection={
+                                    <Icon icon="icon-user-search" size={16} />
+                                }
+                            >
+                                Kiểm tra tài khoản
+                            </Button>
+                            <Button
+                                variant="default"
+                                size="sm"
+                                leftSection={
+                                    <Icon icon="icon-trash" size={16} />
+                                }
+                                onClick={handleDelete}
+                                loading={isDeleting}
+                            >
+                                Xóa tài khoản
+                            </Button>
+                            <Button
+                                variant="default"
+                                size="sm"
+                                leftSection={
+                                    <Icon icon="icon-login" size={16} />
+                                }
+                                onClick={() => handleLoginAccount(selectedIds)}
+                                loading={isLoggingIn}
+                            >
+                                Đăng nhập
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Table */}
             <DataTable<Row>
-                data={pageItems}
+                data={rows}
                 columns={columns}
                 getRowId={(r) => r.id}
-                pagination={pagination}
+                pagination={apiPagination}
                 onPageChange={setPage}
                 onPageSizeChange={(size) => {
                     setPageSize(size);
                     setPage(1);
                 }}
+                loading={isLoading}
                 emptyMessage="Chưa có tài khoản nào."
                 selectable
                 defaultSelection={selectedIds}
@@ -438,9 +545,10 @@ const AccountManagementPage = () => {
             <AddAccountModal
                 opened={addAccountModalOpened}
                 onClose={() => setAddAccountModalOpened(false)}
-                onSubmit={(accounts) => {
-                    console.log("Adding accounts:", accounts);
-                    // TODO: Implement account addition logic
+                onSubmit={(result) => {
+                    if (result.allSuccess) {
+                        setAddAccountModalOpened(false);
+                    }
                 }}
             />
         </div>
