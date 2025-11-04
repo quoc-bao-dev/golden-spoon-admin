@@ -25,4 +25,5 @@ export const _Icon = {
     "icon-trash": "/icon/common/icon-trash.svg",
     "icon-user-search": "/icon/common/icon-user-search.svg",
     "icon-gold-gate": "/icon/common/icon-gold-gate.svg",
+    "icon-update": "/icon/common/icon-update.svg",
 };

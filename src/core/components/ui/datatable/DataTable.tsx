@@ -104,6 +104,9 @@ export function DataTable<T>(props: DataTableProps<T>) {
                         highlightOnHover
                         withRowBorders={false}
                         className="w-full table-fixed"
+                        style={{
+                            borderCollapse: "separate",
+                        }}
                     >
                         <Table.Thead c={"gray.4"}>
                             <Table.Tr>
@@ -130,7 +133,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                                 {columns.map((col) => (
                                     <Table.Th
                                         key={col.key}
-                                        className={`text-xs font-medium bg-[#F1F3F5]! align-middle ${
+                                        className={`text-xs font-medium bg-[#F1F3F5]! align-middle px-5! ${
                                             col.align === "right"
                                                 ? "text-right"
                                                 : col.align === "center"
@@ -172,7 +175,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                                           {columns.map((col, colIndex) => (
                                               <Table.Td
                                                   key={`skeleton-${rowIndex}-${col.key}-${colIndex}`}
-                                                  className={`text-sm align-middle ${
+                                                  className={`text-sm align-middle px-5! ${
                                                       col.align === "right"
                                                           ? "text-right"
                                                           : col.align ===
@@ -195,7 +198,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                                       return (
                                           <Table.Tr
                                               key={id}
-                                              className="border-b! border-dashed border-gray-200!"
+                                              className="border-b! border-dashed border-gray-200!  "
                                               onClick={() =>
                                                   rowEvents?.onRowClick?.(
                                                       row,
@@ -232,7 +235,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                                               {columns.map((col) => (
                                                   <Table.Td
                                                       key={`${id}-${col.key}`}
-                                                      className={`text-sm align-middle ${
+                                                      className={`text-sm align-middle  px-5! ${
                                                           col.align === "right"
                                                               ? "text-right"
                                                               : col.align ===

@@ -143,7 +143,7 @@ export const AddAccountModal = ({
     return (
         <Modal
             opened={opened}
-            onClose={onClose}
+            onClose={isPending ? () => {} : onClose}
             title={
                 <Text fw={600} size="lg">
                     Thêm tài khoản
@@ -152,6 +152,8 @@ export const AddAccountModal = ({
             size="lg"
             radius="md"
             centered
+            closeOnClickOutside={!isPending}
+            closeOnEscape={!isPending}
         >
             <Stack gap="md">
                 {/* Account List Label */}
@@ -169,6 +171,7 @@ export const AddAccountModal = ({
                     minRows={6}
                     maxRows={10}
                     autosize
+                    disabled={isPending}
                     styles={{
                         input: {
                             fontFamily: "monospace",
@@ -215,7 +218,11 @@ export const AddAccountModal = ({
 
                 {/* Action Buttons */}
                 <Group justify="flex-end" mt="md">
-                    <Button variant="subtle" onClick={onClose}>
+                    <Button
+                        variant="subtle"
+                        onClick={onClose}
+                        disabled={isPending}
+                    >
                         Hủy
                     </Button>
                     <Button

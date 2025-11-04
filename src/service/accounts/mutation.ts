@@ -7,6 +7,8 @@ import {
     CreateAccountResponse,
     AccountLoginResponse,
     AccountSyncResponse,
+    UpdateAccountPayload,
+    UpdateAccountResponse,
 } from "./type";
 
 export const useCreateAccountMutation = ({
@@ -77,4 +79,23 @@ export const useSyncAccountMutation = ({
             onError?.(error);
         },
     });
+};
+
+export const useUpdateAccountMutation = ({
+    onSuccess,
+    onError,
+}: MutationCallbacks<UpdateAccountResponse> = {}) => {
+    const queryClient = useQueryClient();
+    return useMutation<UpdateAccountResponse, AxiosError, UpdateAccountPayload>(
+        {
+            mutationFn: apiAccounts.update,
+            onSuccess: (data) => {
+                onSuccess?.(data);
+                queryClient.invalidateQueries({ queryKey: ["accounts"] });
+            },
+            onError: (error) => {
+                onError?.(error);
+            },
+        }
+    );
 };

@@ -11,7 +11,7 @@ export const _Image = {
 
     // mock
     "login-button": "/image/mock/login-button.png",
-    avatar: "/image/mock/avatar.jpg",
+    avatar: "/image/avatar.png",
     bank: "/image/mock/bank.png",
     "image-commbo": "/image/mock/image-commbo.png",
 } as const;

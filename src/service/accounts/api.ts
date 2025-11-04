@@ -6,6 +6,8 @@ import {
     CreateAccountResponse,
     AccountLoginResponse,
     AccountSyncResponse,
+    UpdateAccountPayload,
+    UpdateAccountResponse,
 } from "./type";
 
 export const apiAccounts = {
@@ -39,6 +41,14 @@ export const apiAccounts = {
     sync: async (id: string) => {
         const response = await axiosInstant.post<AccountSyncResponse>(
             `accounts/${id}/sync`
+        );
+        return response.data;
+    },
+
+    update: async ({ id, ...data }: UpdateAccountPayload) => {
+        const response = await axiosInstant.put<UpdateAccountResponse>(
+            `accounts/${id}`,
+            data
         );
         return response.data;
     },

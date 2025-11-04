@@ -3,27 +3,32 @@ import {
     DataTable,
     Icon,
     PaginationState,
-    Stats,
+    showErrorToast,
+    showSuccessToast,
 } from "@/core/components/ui";
+import type { AccountAuthStatus } from "@/service/accounts";
+import {
+    useAccountsQuery,
+    useDeleteAccountMutation,
+    useLoginAccountMutation,
+} from "@/service/accounts";
 import {
     ActionIcon,
+    Avatar,
     Badge,
     Box,
-    Button,
     Menu,
-    Select,
-    TextInput,
     Title,
     Tooltip,
 } from "@mantine/core";
 import { useSessionStorage } from "@mantine/hooks";
 import { useMemo, useState } from "react";
 import { AddAccountModal } from "../components";
-import { useAccountsQuery } from "@/service/accounts";
-import { useDeleteAccountMutation } from "@/service/accounts";
-import { useLoginAccountMutation } from "@/service/accounts";
-import { showSuccessToast, showErrorToast } from "@/core/components/ui";
-import type { AccountAuthStatus } from "@/service/accounts";
+import AccountActionsBar from "../components/AccountActionsBar";
+import AccountFilterBar from "../components/AccountFilterBar";
+import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
+import UpdateAccountModal from "../components/UpdateAccountModal";
+import { _Image } from "@/core/const/asset/image";
 
 type AccountRow = {
     id: string;
@@ -35,11 +40,12 @@ type AccountRow = {
     rewardPoints: number;
     status: AccountAuthStatus;
     tokenExpired?: boolean;
+    avatarUrl?: string;
 };
 
 const AccountManagementPage = () => {
-    const [searchValue, setSearchValue] = useState("0969-886-969");
-    const [statusFilter, setStatusFilter] = useState<string | null>("Tất cả");
+    const [searchValue, setSearchValue] = useState("");
+    const [statusFilter, setStatusFilter] = useState<string | null>("");
     const [page, setPage] = useSessionStorage<number>({
         key: "account-management.page",
         defaultValue: 1,
@@ -53,70 +59,14 @@ const AccountManagementPage = () => {
         Record<string, boolean>
     >({});
     const [addAccountModalOpened, setAddAccountModalOpened] = useState(false);
-
-    // Mock data
-    const accounts: AccountRow[] = [
-        {
-            id: "1",
-            name: "Giàng A Sướng",
-            email: "peachytran420@gmail.com",
-            emailVerified: true,
-            phone: "0969-886-969",
-            password: "password123",
-            rewardPoints: 69420,
-            status: "active",
-            tokenExpired: true,
-        },
-        {
-            id: "2",
-            name: "Y Thuyên Mô",
-            email: "peachytran420@gmail.com",
-            emailVerified: false,
-            phone: "0969-886-969",
-            password: "123789POIEWQ!@#$%",
-            rewardPoints: 69420,
-            status: "locked",
-        },
-        ...Array(67)
-            .fill(null)
-            .map((_, i) => ({
-                id: String(i + 3),
-                name: "Giàng A Sướng",
-                email: "peachytran420@gmail.com",
-                emailVerified: true,
-                phone: "0969-886-969",
-                password: "password123",
-                rewardPoints: 69420,
-                status: "active" as const,
-            })),
-    ];
-
-    // Filter accounts
-    const filteredAccounts = accounts.filter((account) => {
-        const matchesSearch =
-            !searchValue ||
-            account.phone.includes(searchValue) ||
-            account.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-            account.email.toLowerCase().includes(searchValue.toLowerCase());
-
-        const matchesStatus =
-            statusFilter === "Tất cả" ||
-            (statusFilter === "Active" && account.status === "active") ||
-            (statusFilter === "Banned" && account.status !== "active");
-
-        return matchesSearch && matchesStatus;
-    });
-
-    const total = filteredAccounts.length;
-    const bannedCount = filteredAccounts.filter(
-        (a) => a.status !== "active"
-    ).length;
-    const activeCount = filteredAccounts.filter(
-        (a) => a.status === "active"
-    ).length;
-
-    const start = (page - 1) * pageSize;
-    const pageItems = filteredAccounts.slice(start, start + pageSize);
+    const [confirmDeleteOpened, setConfirmDeleteOpened] = useState(false);
+    const [idsToDelete, setIdsToDelete] = useState<string[]>([]);
+    const [updateModalOpened, setUpdateModalOpened] = useState(false);
+    const [editingAccount, setEditingAccount] = useState<{
+        id: string;
+        email: string;
+        phone: string;
+    } | null>(null);
 
     const togglePasswordVisibility = (accountId: string) => {
         setPasswordVisibility((prev) => ({
@@ -166,27 +116,41 @@ const AccountManagementPage = () => {
         {
             key: "user",
             header: "User",
-            className: "min-w-[200px]",
+            className: "min-w-[240px]",
             render: ({ row }) => {
                 return (
-                    <div className="flex flex-col gap-1">
-                        <div className="font-medium">{row.name || "-"}</div>
-                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                            {row.email || "-"}
-                            {row.emailVerified && (
-                                <Tooltip label="E-mail đã xác thực">
-                                    <Box
-                                        component="span"
-                                        className="inline-flex items-center cursor-pointer"
-                                    >
-                                        <Icon
-                                            icon="icon-check-graund"
-                                            size={20}
-                                            className="text-green-500"
-                                        />
-                                    </Box>
-                                </Tooltip>
-                            )}
+                    <div className="flex items-center gap-3">
+                        <Avatar
+                            src={row.avatarUrl || _Image.avatar}
+                            size="md"
+                            imageProps={{
+                                onError: (e) => {
+                                    const img =
+                                        e.currentTarget as HTMLImageElement;
+                                    img.onerror = null;
+                                    img.src = _Image.avatar;
+                                },
+                            }}
+                        />
+                        <div className="flex flex-col gap-1">
+                            <div className="font-medium">{row.name || "-"}</div>
+                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                                {row.email || "-"}
+                                {row.emailVerified && (
+                                    <Tooltip label="E-mail đã xác thực">
+                                        <Box
+                                            component="span"
+                                            className="inline-flex items-center cursor-pointer shrink-0"
+                                        >
+                                            <Icon
+                                                icon="icon-check-graund"
+                                                size={20}
+                                                className="text-green-500"
+                                            />
+                                        </Box>
+                                    </Tooltip>
+                                )}
+                            </div>
                         </div>
                     </div>
                 );
@@ -204,7 +168,7 @@ const AccountManagementPage = () => {
                             <Tooltip label="Token hết hạn, hãy đăng nhập lại">
                                 <Box
                                     component="span"
-                                    className="inline-flex items-center cursor-pointer"
+                                    className="inline-flex items-center cursor-pointer shrink-0"
                                 >
                                     <Icon
                                         icon="icon-info-red"
@@ -306,6 +270,14 @@ const AccountManagementPage = () => {
                                 leftSection={
                                     <Icon icon="icon-pencil" size={16} />
                                 }
+                                onClick={() => {
+                                    setEditingAccount({
+                                        id: row.id,
+                                        email: row.email,
+                                        phone: row.phone,
+                                    });
+                                    setUpdateModalOpened(true);
+                                }}
                             >
                                 Chỉnh sửa
                             </Menu.Item>
@@ -314,7 +286,10 @@ const AccountManagementPage = () => {
                                     <Icon icon="icon-trash" size={16} />
                                 }
                                 color="red"
-                                onClick={() => deleteAccount(row.id)}
+                                onClick={() => {
+                                    setIdsToDelete([row.id]);
+                                    setConfirmDeleteOpened(true);
+                                }}
                                 disabled={isDeleting}
                             >
                                 Xóa tài khoản
@@ -328,7 +303,9 @@ const AccountManagementPage = () => {
 
     const { data: accountsData, isLoading } = useAccountsQuery({
         page,
-        pageSize,
+        page_size: pageSize,
+        search: searchValue || undefined,
+        status: statusFilter ? (statusFilter as AccountAuthStatus) : undefined,
     });
 
     const rows: AccountRow[] = useMemo(() => {
@@ -343,49 +320,63 @@ const AccountManagementPage = () => {
             password: item.password ?? "-",
             rewardPoints: Number(item.coin_amount ?? 0),
             status: item.auth_status,
+            avatarUrl: String(
+                (item as any).avatar_url || (item as any).avatar || ""
+            ),
         }));
     }, [accountsData]);
 
-    const serverTotal = accountsData?.total ?? total;
+    const serverTotal = accountsData?.total;
     const apiPagination: PaginationState = {
         page,
         pageSize,
-        total: serverTotal,
+        total: serverTotal!,
     };
 
-    const { mutate: deleteAccount, isPending: isDeleting } =
+    const { mutateAsync: deleteAccount, isPending: isDeleting } =
         useDeleteAccountMutation({
             onSuccess: () => {
-                showSuccessToast("Xóa tài khoản thành công");
+                // showSuccessToast("Xóa tài khoản thành công");
             },
             onError: () => {
-                showErrorToast("Xóa tài khoản thất bại");
+                // showErrorToast("Xóa tài khoản thất bại");
             },
         });
 
-    const handleDelete = () => {
-        if (selectedIds.length === 0) return;
-        selectedIds.forEach((id) => deleteAccount(id));
-        setSelectedIds([]);
+    const handleDelete = async (ids?: string[]) => {
+        const list = ids ?? selectedIds;
+        if (list.length === 0) {
+            showErrorToast("Vui lòng chọn tài khoản");
+            return;
+        }
+        const results = await Promise.all(list.map((id) => deleteAccount(id)));
+        const success = results.length;
+        const fail = results.length - success;
+
+        console.log({ results });
+
+        if (success > 0)
+            showSuccessToast(`Xóa thành công ${success} tài khoản`);
+        if (fail > 0) showErrorToast(`Xóa thất bại ${fail} tài khoản`);
+        setSelectedIds((prev) => prev.filter((id) => !list.includes(id)));
+        setConfirmDeleteOpened(false);
     };
 
-    const { mutate: loginAccount, isPending: isLoggingIn } =
-        useLoginAccountMutation({
-            onSuccess: () => {
-                showSuccessToast("Đăng nhập thành công");
-            },
-            onError: () => {
-                showErrorToast("Đăng nhập thất bại");
-            },
-        });
+    const { mutateAsync: loginAccount, isPending: isLoggingIn } =
+        useLoginAccountMutation({});
 
-    const handleLoginAccount = (ids: string | string[]) => {
+    const handleLoginAccount = async (ids: string | string[]) => {
         const list = Array.isArray(ids) ? ids : [ids];
         if (list.length === 0) {
             showErrorToast("Vui lòng chọn tài khoản");
             return;
         }
-        list.forEach((id) => loginAccount(id));
+        const results = await Promise.all(list.map((id) => loginAccount(id)));
+        const success = results.filter((r) => Boolean(r)).length;
+        const fail = results.length - success;
+        if (success > 0)
+            showSuccessToast(`Đăng nhập thành công ${success} tài khoản`);
+        if (fail > 0) showErrorToast(`Đăng nhập thất bại ${fail} tài khoản`);
     };
 
     return (
@@ -396,130 +387,46 @@ const AccountManagementPage = () => {
                     <Title order={3} className="font-semibold truncate">
                         Quản lý tài khoản
                     </Title>
-                    <div className="flex gap-2 flex-1 ml-8 flex-wrap justify-end items-center">
-                        <div className="relative flex-1 max-w-xs">
-                            <TextInput
-                                placeholder="Tìm kiếm"
-                                value={searchValue}
-                                onChange={(e) => {
-                                    setSearchValue(e.currentTarget.value);
-                                    setPage(1);
-                                }}
-                                className="w-full"
-                                leftSection={
-                                    <Icon icon="icon-search" size={18} />
-                                }
-                            />
-                        </div>
-
-                        <Stats
-                            items={[
-                                {
-                                    label: "Tổng",
-                                    value: total,
-                                    color: "#000",
-                                },
-                                {
-                                    label: "Banned",
-                                    value: bannedCount,
-                                    color: "#FA5252",
-                                },
-                                {
-                                    label: "Active",
-                                    value: activeCount,
-                                    color: "#12B886",
-                                },
-                            ]}
-                        />
-
-                        <Select
-                            placeholder="Trạng thái: Tất cả"
-                            value={statusFilter}
-                            onChange={setStatusFilter}
-                            data={["Tất cả", "Active", "Banned"]}
-                            className="min-w-[200px]"
-                        />
-                        <Button
-                            leftSection="+"
-                            color="brand"
-                            size="sm"
-                            onClick={() => setAddAccountModalOpened(true)}
-                        >
-                            Thêm tài khoản
-                        </Button>
-                    </div>
+                    <AccountFilterBar
+                        searchValue={searchValue}
+                        onSearchChange={(val) => {
+                            setSearchValue(val);
+                            setPage(1);
+                        }}
+                        statusFilter={statusFilter}
+                        onStatusChange={setStatusFilter}
+                        statusOptions={[
+                            { key: "", value: "Tất cả" },
+                            { key: "active", value: "Active" },
+                            { key: "inactive", value: "Inactive" },
+                            { key: "locked", value: "Locked" },
+                            { key: "login_failed", value: "Login Failed" },
+                        ]}
+                        total={serverTotal || 0}
+                        bannedCount={
+                            rows.filter((r) => r.status !== "active").length
+                        }
+                        activeCount={
+                            rows.filter((r) => r.status === "active").length
+                        }
+                        onOpenAddAccount={() => setAddAccountModalOpened(true)}
+                    />
                 </div>
 
                 {/* Statistics and Action Buttons */}
-                <div className="flex items-center justify-between gap-4 min-h-[48px]">
-                    <div className="flex gap-4">
-                        {/* Search Results Info */}
-                        {searchValue && (
-                            <div className="mb-2 text-sm text-gray-400">
-                                Tìm thấy{" "}
-                                <span className="text-gray-700">
-                                    {filteredAccounts.length}
-                                </span>{" "}
-                                kết quả cho "
-                                <span className="text-gray-700">
-                                    {searchValue}
-                                </span>
-                                "
-                            </div>
-                        )}
-
-                        {/* Selection Info */}
-                        {selectedIds.length > 0 && (
-                            <div className="mb-2 text-sm text-[#E67700]">
-                                Đã chọn: {selectedIds.length}
-                            </div>
-                        )}
-                    </div>
-
-                    {selectedIds.length > 0 && (
-                        <div className="flex gap-2">
-                            <Button
-                                variant="default"
-                                leftSection={
-                                    <Icon icon="icon-pencil" size={16} />
-                                }
-                            >
-                                Cập nhật thông tin tài khoản
-                            </Button>
-                            <Button
-                                variant="default"
-                                size="sm"
-                                leftSection={
-                                    <Icon icon="icon-user-search" size={16} />
-                                }
-                            >
-                                Kiểm tra tài khoản
-                            </Button>
-                            <Button
-                                variant="default"
-                                size="sm"
-                                leftSection={
-                                    <Icon icon="icon-trash" size={16} />
-                                }
-                                onClick={handleDelete}
-                                loading={isDeleting}
-                            >
-                                Xóa tài khoản
-                            </Button>
-                            <Button
-                                variant="default"
-                                size="sm"
-                                leftSection={
-                                    <Icon icon="icon-login" size={16} />
-                                }
-                                onClick={() => handleLoginAccount(selectedIds)}
-                                loading={isLoggingIn}
-                            >
-                                Đăng nhập
-                            </Button>
-                        </div>
-                    )}
-                </div>
+                <AccountActionsBar
+                    searchValue={searchValue}
+                    filteredCount={serverTotal || 0}
+                    selectedCount={selectedIds.length}
+                    selectedIds={selectedIds}
+                    onDelete={() => {
+                        setIdsToDelete(selectedIds);
+                        setConfirmDeleteOpened(true);
+                    }}
+                    onLogin={() => handleLoginAccount(selectedIds)}
+                    isDeleting={isDeleting}
+                    isLoggingIn={isLoggingIn}
+                />
             </div>
 
             {/* Table */}
@@ -550,6 +457,22 @@ const AccountManagementPage = () => {
                         setAddAccountModalOpened(false);
                     }
                 }}
+            />
+
+            <ConfirmDeleteModal
+                opened={confirmDeleteOpened}
+                count={idsToDelete.length}
+                onClose={() => setConfirmDeleteOpened(false)}
+                onConfirm={() => handleDelete(idsToDelete)}
+                isPending={isDeleting}
+            />
+
+            <UpdateAccountModal
+                opened={updateModalOpened}
+                accountId={editingAccount?.id || null}
+                email={editingAccount?.email || null}
+                phone={editingAccount?.phone || null}
+                onClose={() => setUpdateModalOpened(false)}
             />
         </div>
     );
