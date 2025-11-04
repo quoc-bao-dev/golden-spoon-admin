@@ -65,6 +65,7 @@ export const AccountActionsBar = ({
                         leftSection={<Icon icon="icon-update" size={16} />}
                         onClick={handleSync}
                         loading={isSyncing}
+                        disabled={isDeleting || isLoggingIn}
                     >
                         Đồng bộ tin tài khoản
                     </Button>
@@ -72,6 +73,7 @@ export const AccountActionsBar = ({
                         variant="default"
                         size="sm"
                         leftSection={<Icon icon="icon-user-search" size={16} />}
+                        disabled={isDeleting || isLoggingIn || isSyncing}
                     >
                         Kiểm tra tài khoản
                     </Button>
@@ -81,6 +83,7 @@ export const AccountActionsBar = ({
                         leftSection={<Icon icon="icon-trash" size={16} />}
                         onClick={onDelete}
                         loading={isDeleting}
+                        disabled={isSyncing || isLoggingIn}
                     >
                         Xóa tài khoản
                     </Button>
@@ -90,6 +93,7 @@ export const AccountActionsBar = ({
                         leftSection={<Icon icon="icon-login" size={16} />}
                         onClick={onLogin}
                         loading={isLoggingIn}
+                        disabled={isDeleting || isSyncing}
                     >
                         Đăng nhập
                     </Button>
