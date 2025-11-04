@@ -1,11 +1,10 @@
 "use client";
 
-import { PropsWithChildren, useEffect, useRef } from "react";
-import { useAuthStore } from "../store";
+import AppLoading from "@/core/components/ui/AppLoading";
 import { useGetUserInfoMutation } from "@/service/auth/mutation";
 import { useRouter } from "next/navigation";
-import { AppShell, Box, Skeleton, Stack } from "@mantine/core";
-import AppLoading from "@/core/components/ui/AppLoading";
+import { PropsWithChildren, useEffect, useRef } from "react";
+import { useAuthStore } from "../store";
 
 const AuthGraund = ({ children }: PropsWithChildren) => {
     const router = useRouter();

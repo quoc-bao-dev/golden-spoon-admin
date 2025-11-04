@@ -353,13 +353,13 @@ const AccountManagementPage = () => {
         const success = results.length;
         const fail = results.length - success;
 
-        console.log({ results });
-
         if (success > 0)
             showSuccessToast(`Xóa thành công ${success} tài khoản`);
         if (fail > 0) showErrorToast(`Xóa thất bại ${fail} tài khoản`);
         setSelectedIds((prev) => prev.filter((id) => !list.includes(id)));
         setConfirmDeleteOpened(false);
+        setIdsToDelete([]);
+        setSelectedIds([]);
     };
 
     const { mutateAsync: loginAccount, isPending: isLoggingIn } =
