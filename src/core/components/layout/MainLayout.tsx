@@ -223,7 +223,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
                                                                   e.preventDefault()
                                                             : undefined
                                                     }
-                                                    className={`hover:bg-gray-100 rounded-xl p-2 text-gray-400 active:bg-gray-600 ${
+                                                    className={`hover:bg-gray-100 rounded-xl p-2 text-gray-400 active:bg-gray-600 font-semibold! ${
                                                         item.isUnderDevelopment
                                                             ? "opacity-50 cursor-not-allowed"
                                                             : ""

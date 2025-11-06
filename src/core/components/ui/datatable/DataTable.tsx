@@ -235,7 +235,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                                               {columns.map((col) => (
                                                   <Table.Td
                                                       key={`${id}-${col.key}`}
-                                                      className={`text-sm align-middle  px-5! ${
+                                                      className={`text-sm align-middle px-5! ${
                                                           col.align === "right"
                                                               ? "text-right"
                                                               : col.align ===

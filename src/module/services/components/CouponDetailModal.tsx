@@ -60,11 +60,10 @@ export const CouponDetailModal = ({
         <Modal
             opened={opened}
             onClose={onClose}
-            size="xl"
             radius="md"
             centered
-            padding={0}
             withCloseButton={false}
+            size="auto"
             styles={{
                 body: {
                     padding: 0,
@@ -73,8 +72,8 @@ export const CouponDetailModal = ({
         >
             <div className="flex flex-col md:flex-row">
                 {/* Left Section - Image */}
-                <div className="w-full md:w-[40%] relative bg-gray-50 flex items-center justify-center p-6">
-                    <div className="relative w-full aspect-square max-w-md">
+                <div className="w-full md:w-[50%] relative bg-gray-50 flex items-center justify-center p-6">
+                    <div className="relative h-full w-full  ">
                         {/* Discount Badge */}
                         <Badge
                             className="absolute top-0 left-0 z-10 bg-red-500 text-white"
@@ -87,18 +86,26 @@ export const CouponDetailModal = ({
                         <ImageCmp
                             src="image-commbo"
                             className="w-full h-full object-cover rounded-lg"
-                            width={400}
-                            height={400}
+                            width={1000}
+                            height={1000}
                         />
                     </div>
                 </div>
 
                 {/* Right Section - Details with ScrollArea */}
-                <div className="w-full md:w-[60%] flex flex-col max-h-[80vh]">
+                <div className="w-full md:w-[60%] flex flex-col max-h-[80vh] py-6">
                     <ScrollArea className="flex-1">
-                        <Stack gap="md" p="md">
+                        <Stack gap="md" px="md">
                             {/* Header with close button */}
-                            <Group justify="space-between" align="flex-start">
+                            <Group
+                                justify="space-between"
+                                align="flex-start"
+                                pos={"sticky"}
+                                top={0}
+                                bg="white"
+                                pt="md"
+                                className="z-100"
+                            >
                                 <Title order={3} fw={600} className="flex-1">
                                     Coupon {formatCurrency(coupon.value)}
                                 </Title>
@@ -207,9 +214,6 @@ export const CouponDetailModal = ({
                                 color="yellow"
                                 className="bg-[#FFD479] text-gray-900 hover:bg-[#FFC85A] w-full"
                                 onClick={handleBuy}
-                                leftSection={
-                                    <span className="text-gray-900">🛒</span>
-                                }
                             >
                                 Mua Ngay
                             </Button>

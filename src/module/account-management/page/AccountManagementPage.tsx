@@ -68,6 +68,14 @@ const AccountManagementPage = () => {
         phone: string;
     } | null>(null);
 
+    const statusOptions = [
+        { key: "", value: "Tất cả" },
+        { key: "active", value: "Active" },
+        { key: "inactive", value: "Inactive" },
+        { key: "locked", value: "Locked" },
+        { key: "login_failed", value: "Login Failed" },
+    ];
+
     const togglePasswordVisibility = (accountId: string) => {
         setPasswordVisibility((prev) => ({
             ...prev,
@@ -394,13 +402,7 @@ const AccountManagementPage = () => {
                         }}
                         statusFilter={statusFilter}
                         onStatusChange={setStatusFilter}
-                        statusOptions={[
-                            { key: "", value: "Tất cả" },
-                            { key: "active", value: "Active" },
-                            { key: "inactive", value: "Inactive" },
-                            { key: "locked", value: "Locked" },
-                            { key: "login_failed", value: "Login Failed" },
-                        ]}
+                        statusOptions={statusOptions}
                         total={serverTotal || 0}
                         bannedCount={
                             rows.filter((r) => r.status !== "active").length

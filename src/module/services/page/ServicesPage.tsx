@@ -14,8 +14,10 @@ import {
     TextInput,
     Title,
 } from "@mantine/core";
-import { useState } from "react";
+import { Skeleton } from "@mantine/core";
+import { useMemo, useState } from "react";
 import { CouponDetailModal } from "../components";
+import { useMyOffersQuery, useVouchersQuery } from "@/service/vouchers";
 
 export type Coupon = {
     id: string;
@@ -26,6 +28,7 @@ export type Coupon = {
     validFrom: string;
     validTo: string;
     category: "all" | "for-you" | "partner";
+    brandFeatureImageFileName?: string;
 };
 
 const ServicesPage = () => {
@@ -49,8 +52,91 @@ const ServicesPage = () => {
             category: i % 3 === 0 ? "all" : i % 3 === 1 ? "for-you" : "partner",
         }));
 
+    const formatCurrency = (amount: number) => {
+        return `${amount.toLocaleString("vi-VN")}₫`;
+    };
+
+    const categories = [
+        { value: "all", label: "#tất cả" },
+        { value: "my-offers", label: "#ưu đãi của tôi" },
+    ];
+
+    const sortOptions = [
+        { value: "newest", label: "Mới nhất" },
+        { value: "bestselling", label: "Bán chạy nhất" },
+        { value: "lowest-price", label: "Giá thấp nhất" },
+        { value: "highest-discount", label: "Giảm sâu nhất" },
+    ];
+
+    const { data: vouchers, isLoading: isVouchersLoading } = useVouchersQuery();
+
+    const { data: myOffers, isLoading: isMyOffersLoading } = useMyOffersQuery();
+    const isLoading =
+        activeCategory === "my-offers" ? isMyOffersLoading : isVouchersLoading;
+
+    const formatDate = (iso: string) => {
+        try {
+            const d = new Date(iso);
+            const dd = String(d.getDate()).padStart(2, "0");
+            const mm = String(d.getMonth() + 1).padStart(2, "0");
+            const yyyy = d.getFullYear();
+            return `${dd}/${mm}/${yyyy}`;
+        } catch {
+            return iso;
+        }
+    };
+
+    const getBrandImageUrl = (fileName?: string) => {
+        if (!fileName) return "";
+        if (fileName.startsWith("http")) return fileName;
+        return `https://imagedelivery.net/1J0pLjFdKJBzEdIlr1bDRQ/${fileName}/public`;
+    };
+
+    const remoteCoupons = useMemo<Coupon[]>(() => {
+        const items = vouchers?.data?.vouchers ?? [];
+        return items.map((v) => ({
+            id: v.id,
+            name: v.title,
+            merchant: v.brands?.[0]?.title ?? "Golden Gate",
+            value: Number(v.denomination_value) || 0,
+            price: Number(v.denomination_value) || 0,
+            validFrom: formatDate(v.valid_from_date),
+            validTo: formatDate(v.expiry_date),
+            category: "all",
+            brandFeatureImageFileName: v.brands?.[0]?.logo_id,
+        }));
+    }, [vouchers]);
+
+    // Map my-offers response groups into Coupon list
+    const myOffersCoupons = useMemo<Coupon[]>(() => {
+        const groups = myOffers?.data?.groups ?? [];
+        const list: Coupon[] = [];
+        groups.forEach((g) => {
+            const brand = g.brands?.[0];
+            g.vouchers?.forEach((v) => {
+                list.push({
+                    id: v.id,
+                    name: g.title,
+                    merchant: brand?.title ?? "Golden Gate",
+                    value: Number(g.denomination_value) || 0,
+                    price: Number(g.denomination_value) || 0,
+                    validFrom: formatDate(v.valid_from_date),
+                    validTo: formatDate(v.expiry_date),
+                    category: "all",
+                    brandFeatureImageFileName: brand?.logo_id,
+                });
+            });
+        });
+        return list;
+    }, [myOffers]);
+
+    // Prefer API data based on activeCategory, fallback to mock
+    const preferred =
+        activeCategory === "my-offers" ? myOffersCoupons : remoteCoupons;
+    const sourceCoupons = preferred.length > 0 ? preferred : coupons;
+
     // Filter coupons
-    const filteredCoupons = coupons.filter((coupon) => {
+    const filteredCoupons = sourceCoupons.filter((coupon) => {
         const matchesSearch =
             !searchValue ||
             coupon.name.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -80,23 +166,6 @@ const ServicesPage = () => {
         }
         return 0;
     });
-
-    const formatCurrency = (amount: number) => {
-        return `${amount.toLocaleString("vi-VN")}₫`;
-    };
-
-    const categories = [
-        { value: "all", label: "#tất cả" },
-        { value: "for-you", label: "#dành riêng cho bạn" },
-        { value: "partner", label: "#ưu đãi từ đối tác" },
-    ];
-
-    const sortOptions = [
-        { value: "newest", label: "Mới nhất" },
-        { value: "bestselling", label: "Bán chạy nhất" },
-        { value: "lowest-price", label: "Giá thấp nhất" },
-        { value: "highest-discount", label: "Giảm sâu nhất" },
-    ];
 
     const handleCouponClick = (coupon: Coupon) => {
         setSelectedCoupon(coupon);
@@ -176,57 +245,117 @@ const ServicesPage = () => {
                     cols={{ base: 1, sm: 2, md: 2, lg: 4 }}
                     spacing="lg"
                 >
-                    {sortedCoupons.map((coupon) => (
-                        <Card
-                            key={coupon.id}
-                            shadow="sm"
-                            padding="0"
-                            radius="lg"
-                            className="overflow-hidden border border-gray-200! cursor-pointer hover:shadow-md transition-shadow"
-                            onClick={() => handleCouponClick(coupon)}
-                        >
-                            {/* Coupon Visual Header */}
-                            <div className="p-4 ">
-                                <ImageCmp
-                                    src="image-commbo"
-                                    className="w-full h-full object-cover rounded-lg"
-                                    width={400}
-                                />
-                            </div>
-
-                            {/* Merchant Details */}
-                            <Stack gap={2} p="md">
-                                <Group gap="xs" align="center">
-                                    <Icon icon="icon-gold-gate" size={16} />
-                                    <Text fw={600} size="xs">
-                                        {coupon.merchant}
-                                    </Text>
-                                </Group>
-                                <Text c="gray.9" fw={600} className=" pt-2!">
-                                    Coupon {formatCurrency(coupon.value)} VND
-                                </Text>
-
-                                <div className="flex justify-between">
-                                    <div className="flex flex-col gap-1">
-                                        <Text size="sm" c="gray.5">
-                                            {coupon.validFrom} -{" "}
-                                            {coupon.validTo}
-                                        </Text>
-                                        <Text fw={600} size="md" c="gray.6">
-                                            {formatCurrency(coupon.price)}
-                                        </Text>
-                                    </div>
-                                    <Button
-                                        size="sm"
-                                        color="brand"
-                                        className="bg-[#FFD479] text-gray-900 hover:bg-[#FFC85A] rounded-full! w-fit!"
-                                    >
-                                        Mua
-                                    </Button>
+                    {isLoading &&
+                        Array.from({ length: 8 }).map((_, idx) => (
+                            <Card
+                                key={`skeleton-${idx}`}
+                                shadow="sm"
+                                padding="0"
+                                radius="lg"
+                                className="overflow-hidden border border-gray-200!"
+                            >
+                                <div className="p-4 ">
+                                    <Skeleton height={160} radius="md" />
                                 </div>
-                            </Stack>
-                        </Card>
-                    ))}
+                                <Stack gap={8} p="md">
+                                    <Group gap="xs" align="center">
+                                        <Skeleton
+                                            height={32}
+                                            width={32}
+                                            circle
+                                        />
+                                        <Skeleton height={12} width={120} />
+                                    </Group>
+                                    <Skeleton height={18} width="80%" />
+                                    <Group
+                                        justify="space-between"
+                                        align="center"
+                                    >
+                                        <Stack gap={6}>
+                                            <Skeleton height={12} width={160} />
+                                            <Skeleton height={14} width={80} />
+                                        </Stack>
+                                        <Skeleton
+                                            height={28}
+                                            width={64}
+                                            radius="xl"
+                                        />
+                                    </Group>
+                                </Stack>
+                            </Card>
+                        ))}
+                    {!isLoading &&
+                        sortedCoupons.map((coupon) => (
+                            <Card
+                                key={coupon.id}
+                                shadow="sm"
+                                padding="0"
+                                radius="lg"
+                                className="overflow-hidden border border-gray-200! cursor-pointer hover:shadow-md transition-shadow"
+                                onClick={() => handleCouponClick(coupon)}
+                            >
+                                {/* Coupon Visual Header */}
+                                <div className="p-4 ">
+                                    <ImageCmp
+                                        src="image-commbo"
+                                        className="w-full h-full object-cover rounded-lg"
+                                        width={400}
+                                    />
+                                </div>
+
+                                {/* Merchant Details */}
+                                <Stack gap={2} p="md">
+                                    <Group gap="xs" align="center">
+                                        {coupon.brandFeatureImageFileName ? (
+                                            <img
+                                                src={getBrandImageUrl(
+                                                    coupon.brandFeatureImageFileName
+                                                )}
+                                                alt={coupon.merchant}
+                                                className="size-[32px] rounded-sm object-cover"
+                                            />
+                                        ) : (
+                                            <Icon
+                                                icon="icon-gold-gate"
+                                                size={16}
+                                            />
+                                        )}
+                                        <Text fw={600} size="sm">
+                                            {coupon.merchant}
+                                        </Text>
+                                    </Group>
+                                    <Text
+                                        c="gray.9"
+                                        fw={600}
+                                        className=" pt-2!"
+                                    >
+                                        {/* TODO:   */}
+                                        {/* Coupon {formatCurrency(coupon.value)} VND */}
+
+                                        {coupon.name}
+                                    </Text>
+
+                                    <div className="flex justify-between">
+                                        <div className="flex flex-col gap-1">
+                                            <Text size="sm" c="gray.5">
+                                                {coupon.validFrom} -{" "}
+                                                {coupon.validTo}
+                                            </Text>
+                                            <Text fw={600} size="md" c="gray.6">
+                                                {formatCurrency(coupon.price)}
+                                            </Text>
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            color="brand"
+                                            className="bg-[#FFD479] text-gray-900 hover:bg-[#FFC85A] rounded-full! w-fit!"
+                                        >
+                                            Mua
+                                        </Button>
+                                    </div>
+                                </Stack>
+                            </Card>
+                        ))}
                 </SimpleGrid>
             </ScrollArea>
 

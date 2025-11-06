@@ -9,7 +9,7 @@ import {
     splitDateTimeLabel,
 } from "@/core/components/ui";
 import { useDepositHistoryQuery } from "@/service/deposits";
-import { Badge, Select, TextInput, Title } from "@mantine/core";
+import { Badge, Select, TextInput, Title, Tooltip } from "@mantine/core";
 import { DatePickerInput, DatesRangeValue } from "@mantine/dates";
 import { useSessionStorage } from "@mantine/hooks";
 import { useMemo, useState } from "react";
@@ -44,9 +44,9 @@ const TransactionHistoryPage = () => {
             date: String((item as any).created_at ?? ""),
             type: "Nạp tiền",
             amount: Number((item as any).amount ?? 0),
-            balance: Number((item as any).balance ?? 0),
+            balance: Number((item as any).new_balance ?? 0),
             status: String((item as any).status ?? ""),
-            code: String((item as any).id ?? ""),
+            code: String((item as any).content ?? ""),
         }));
     }, [historyData]);
 
@@ -120,7 +120,21 @@ const TransactionHistoryPage = () => {
             key: "code",
             header: "Nội dung giao dịch",
             className: "min-w-[100px] whitespace-nowrap",
-            accessor: (r) => r.code,
+            render: ({ row }) => {
+                return (
+                    <div className="  max-w-[200px]! truncate">
+                        <Tooltip
+                            label={row.code}
+                            position="bottom-end"
+                            withArrow
+                        >
+                            <div className="font-medium max-w-[200px]! ">
+                                {row.code}
+                            </div>
+                        </Tooltip>
+                    </div>
+                );
+            },
         },
     ];
 
