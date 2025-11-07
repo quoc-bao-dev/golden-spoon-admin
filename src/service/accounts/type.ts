@@ -24,7 +24,7 @@ export type AccountItem = {
 
 export type AccountsParams = {
     page?: number;
-    page_size?: number; // server expects page_size
+    limit?: number; // server expects page_size
     search?: string; // phone, email, full_name, or customer_number
     status?: AccountAuthStatus; // active | inactive | locked | login_failed
 };

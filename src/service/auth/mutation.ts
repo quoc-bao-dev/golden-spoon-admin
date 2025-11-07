@@ -1,3 +1,4 @@
+import { showErrorToast } from "@/core/components/ui/Toast";
 import { tokenManager } from "@/core/config";
 import {
     MutationCallbacks,
@@ -17,6 +18,11 @@ export const useLoginMuatation = ({
     return useMutation({
         mutationFn: apiAuth.loginWithFireBase,
         onSuccess: (data) => {
+            if (data.message === "Login unsuccessful") {
+                showErrorToast(data.message);
+                return;
+            }
+
             onSuccess?.(data);
             login(data.data.user);
 

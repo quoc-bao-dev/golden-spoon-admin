@@ -22,7 +22,7 @@ import {
     Tooltip,
 } from "@mantine/core";
 import { useSessionStorage } from "@mantine/hooks";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AddAccountModal } from "../components";
 import AccountActionsBar from "../components/AccountActionsBar";
 import AccountFilterBar from "../components/AccountFilterBar";
@@ -58,6 +58,11 @@ const AccountManagementPage = () => {
     const [passwordVisibility, setPasswordVisibility] = useState<
         Record<string, boolean>
     >({});
+
+    // Reset selection when page changes
+    useEffect(() => {
+        setSelectedIds([]);
+    }, [page]);
     const [addAccountModalOpened, setAddAccountModalOpened] = useState(false);
     const [confirmDeleteOpened, setConfirmDeleteOpened] = useState(false);
     const [idsToDelete, setIdsToDelete] = useState<string[]>([]);
@@ -311,7 +316,7 @@ const AccountManagementPage = () => {
 
     const { data: accountsData, isLoading } = useAccountsQuery({
         page,
-        page_size: pageSize,
+        limit: pageSize,
         search: searchValue || undefined,
         status: statusFilter ? (statusFilter as AccountAuthStatus) : undefined,
     });
@@ -386,6 +391,8 @@ const AccountManagementPage = () => {
         if (fail > 0) showErrorToast(`Đăng nhập thất bại ${fail} tài khoản`);
     };
 
+    console.log({ selectedIds });
+
     return (
         <div className="h-full flex flex-col">
             {/* Header */}
@@ -444,7 +451,7 @@ const AccountManagementPage = () => {
                 loading={isLoading}
                 emptyMessage="Chưa có tài khoản nào."
                 selectable
-                defaultSelection={selectedIds}
+                selection={selectedIds}
                 onSelectionChange={setSelectedIds}
                 showSelectAll
             />

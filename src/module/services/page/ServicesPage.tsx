@@ -1,6 +1,7 @@
 "use client";
 
-import { Icon, ImageCmp } from "@/core/components/ui";
+import { Icon, ImageCmp, Nodata } from "@/core/components/ui";
+import { useMyOffersQuery, useVouchersQuery } from "@/service/vouchers";
 import {
     Badge,
     Button,
@@ -9,15 +10,16 @@ import {
     ScrollArea,
     Select,
     SimpleGrid,
+    Skeleton,
     Stack,
     Text,
     TextInput,
     Title,
+    Tooltip,
 } from "@mantine/core";
-import { Skeleton } from "@mantine/core";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { CouponDetailModal } from "../components";
-import { useMyOffersQuery, useVouchersQuery } from "@/service/vouchers";
 
 export type Coupon = {
     id: string;
@@ -296,10 +298,14 @@ const ServicesPage = () => {
                             >
                                 {/* Coupon Visual Header */}
                                 <div className="p-4 ">
-                                    <ImageCmp
-                                        src="image-commbo"
-                                        className="w-full h-full object-cover rounded-lg"
+                                    <Image
+                                        src={getBrandImageUrl(
+                                            coupon.brandFeatureImageFileName
+                                        )}
                                         width={400}
+                                        height={400}
+                                        alt={coupon.merchant}
+                                        className="w-full aspect-[4/3] rounded-sm object-cover "
                                     />
                                 </div>
 
@@ -324,18 +330,30 @@ const ServicesPage = () => {
                                             {coupon.merchant}
                                         </Text>
                                     </Group>
-                                    <Text
-                                        c="gray.9"
-                                        fw={600}
-                                        className=" pt-2!"
+                                    <Tooltip
+                                        label={coupon.name}
+                                        position="bottom"
+                                        withArrow
+                                        multiline
+                                        w={300}
+                                        styles={{
+                                            tooltip: {
+                                                maxWidth: "240px",
+                                                overflowY: "auto",
+                                                wordBreak: "break-word",
+                                            },
+                                        }}
                                     >
-                                        {/* TODO:   */}
-                                        {/* Coupon {formatCurrency(coupon.value)} VND */}
+                                        <Text
+                                            c="gray.9"
+                                            fw={600}
+                                            className="pt-2! line-clamp-2 mb-2!"
+                                        >
+                                            {coupon.name}
+                                        </Text>
+                                    </Tooltip>
 
-                                        {coupon.name}
-                                    </Text>
-
-                                    <div className="flex justify-between">
+                                    <div className="flex justify-between items-end mt-auto">
                                         <div className="flex flex-col gap-1">
                                             <Text size="sm" c="gray.5">
                                                 {coupon.validFrom} -{" "}
@@ -361,10 +379,8 @@ const ServicesPage = () => {
 
             {/* Empty State */}
             {sortedCoupons.length === 0 && (
-                <div className="flex items-center justify-center h-64">
-                    <Text c="gray.5" size="lg">
-                        Không tìm thấy dịch vụ nào
-                    </Text>
+                <div className="flex items-center justify-center h-full">
+                    <Nodata message="Không tìm thấy dịch vụ nào" />
                 </div>
             )}
 
