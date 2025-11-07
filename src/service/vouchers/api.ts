@@ -4,6 +4,7 @@ import {
     VouchersResponse,
     MyOffersParams,
     MyOffersResponse,
+    VoucherSyncResponse,
 } from "./type";
 
 export const apiVouchers = {
@@ -18,6 +19,13 @@ export const apiVouchers = {
         const response = await axiosInstant.get<MyOffersResponse>(
             "vouchers/my-offers",
             { params }
+        );
+        return response.data;
+    },
+
+    sync: async (id: string) => {
+        const response = await axiosInstant.post<VoucherSyncResponse>(
+            `vouchers/sync/${id}`
         );
         return response.data;
     },

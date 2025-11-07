@@ -91,3 +91,7 @@ export type MyOffersResponse = {
     };
     message: string;
 };
+
+export type VoucherSyncResponse = {
+    message?: string;
+};

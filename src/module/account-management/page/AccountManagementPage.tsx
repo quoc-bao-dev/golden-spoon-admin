@@ -12,6 +12,7 @@ import {
     useDeleteAccountMutation,
     useLoginAccountMutation,
 } from "@/service/accounts";
+import { useSyncVoucherMutation } from "@/service/vouchers";
 import {
     ActionIcon,
     Avatar,
@@ -381,13 +382,60 @@ const AccountManagementPage = () => {
             showErrorToast("Vui lòng chọn tài khoản");
             return;
         }
-        const results = await Promise.all(list.map((id) => loginAccount(id)));
-        const success = results.filter((r) => Boolean(r)).length;
+        const results = await Promise.allSettled(
+            list.map((id) => loginAccount(id))
+        );
+        const success = results.filter((result) => {
+            if (result.status === "fulfilled") {
+                const data = result.value;
+                // Check if message indicates login failure
+                const isLoginUnsuccessful =
+                    data?.message
+                        ?.toLowerCase()
+                        .includes("login unsuccessful") ||
+                    data?.message?.toLowerCase().includes("login unsuccessfu");
+                return !isLoginUnsuccessful;
+            }
+            return false;
+        }).length;
         const fail = results.length - success;
         if (success > 0)
             showSuccessToast(`Đăng nhập thành công ${success} tài khoản`);
         if (fail > 0) showErrorToast(`Đăng nhập thất bại ${fail} tài khoản`);
         // Invalidate once after all mutations complete
+        queryClient.invalidateQueries({ queryKey: ["accounts"] });
+    };
+
+    const { mutateAsync: syncVoucher, isPending: isSyncingVoucher } =
+        useSyncVoucherMutation({ skipInvalidate: true });
+
+    const handleSyncVoucher = async (ids: string | string[]) => {
+        const list = Array.isArray(ids) ? ids : [ids];
+        if (list.length === 0) {
+            showErrorToast("Vui lòng chọn tài khoản");
+            return;
+        }
+        const results = await Promise.allSettled(
+            list.map((id) => syncVoucher(id))
+        );
+        const success = results.filter((result) => {
+            if (result.status === "fulfilled") {
+                const data = result.value;
+                // Check if message indicates sync failure
+                const isSyncUnsuccessful =
+                    data?.message?.toLowerCase().includes("unsuccessful") ||
+                    data?.message?.toLowerCase().includes("unsuccessfu");
+                return !isSyncUnsuccessful;
+            }
+            return false;
+        }).length;
+        const fail = results.length - success;
+        if (success > 0)
+            showSuccessToast(`Đồng bộ voucher thành công ${success} tài khoản`);
+        if (fail > 0)
+            showErrorToast(`Đồng bộ voucher thất bại ${fail} tài khoản`);
+        // Invalidate once after all mutations complete
+        queryClient.invalidateQueries({ queryKey: ["vouchers"] });
         queryClient.invalidateQueries({ queryKey: ["accounts"] });
     };
 
@@ -430,8 +478,10 @@ const AccountManagementPage = () => {
                         setConfirmDeleteOpened(true);
                     }}
                     onLogin={() => handleLoginAccount(selectedIds)}
+                    onSyncVoucher={() => handleSyncVoucher(selectedIds)}
                     isDeleting={isDeleting}
                     isLoggingIn={isLoggingIn}
+                    isSyncingVoucher={isSyncingVoucher}
                 />
             </div>
 

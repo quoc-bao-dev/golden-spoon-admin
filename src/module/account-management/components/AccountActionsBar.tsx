@@ -10,8 +10,10 @@ type AccountActionsBarProps = {
     selectedIds: string[];
     onDelete: () => void;
     onLogin: () => void;
+    onSyncVoucher: () => void;
     isDeleting?: boolean;
     isLoggingIn?: boolean;
+    isSyncingVoucher?: boolean;
 };
 
 export const AccountActionsBar = ({
@@ -21,8 +23,10 @@ export const AccountActionsBar = ({
     selectedIds,
     onDelete,
     onLogin,
+    onSyncVoucher,
     isDeleting,
     isLoggingIn,
+    isSyncingVoucher,
 }: AccountActionsBarProps) => {
     const queryClient = useQueryClient();
     const { mutateAsync: syncAccount, isPending: isSyncing } =
@@ -69,15 +73,30 @@ export const AccountActionsBar = ({
                         leftSection={<Icon icon="icon-update" size={16} />}
                         onClick={handleSync}
                         loading={isSyncing}
-                        disabled={isDeleting || isLoggingIn}
+                        disabled={isDeleting || isLoggingIn || isSyncingVoucher}
                     >
                         Đồng bộ tin tài khoản
                     </Button>
                     <Button
                         variant="default"
                         size="sm"
-                        leftSection={<Icon icon="icon-user-search" size={16} />}
+                        leftSection={<Icon icon="icon-update" size={16} />}
+                        onClick={onSyncVoucher}
+                        loading={isSyncingVoucher}
                         disabled={isDeleting || isLoggingIn || isSyncing}
+                    >
+                        Đồng bộ voucher
+                    </Button>
+                    <Button
+                        variant="default"
+                        size="sm"
+                        leftSection={<Icon icon="icon-user-search" size={16} />}
+                        disabled={
+                            isDeleting ||
+                            isLoggingIn ||
+                            isSyncing ||
+                            isSyncingVoucher
+                        }
                     >
                         Kiểm tra tài khoản
                     </Button>
@@ -87,7 +106,7 @@ export const AccountActionsBar = ({
                         leftSection={<Icon icon="icon-trash" size={16} />}
                         onClick={onDelete}
                         loading={isDeleting}
-                        disabled={isSyncing || isLoggingIn}
+                        disabled={isSyncing || isLoggingIn || isSyncingVoucher}
                     >
                         Xóa tài khoản
                     </Button>
@@ -97,7 +116,7 @@ export const AccountActionsBar = ({
                         leftSection={<Icon icon="icon-login" size={16} />}
                         onClick={onLogin}
                         loading={isLoggingIn}
-                        disabled={isDeleting || isSyncing}
+                        disabled={isDeleting || isSyncing || isSyncingVoucher}
                     >
                         Đăng nhập
                     </Button>
