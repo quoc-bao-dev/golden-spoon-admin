@@ -29,6 +29,7 @@ import AccountFilterBar from "../components/AccountFilterBar";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import UpdateAccountModal from "../components/UpdateAccountModal";
 import { _Image } from "@/core/const/asset/image";
+import { useQueryClient } from "@tanstack/react-query";
 
 type AccountRow = {
     id: string;
@@ -346,15 +347,10 @@ const AccountManagementPage = () => {
         total: serverTotal!,
     };
 
+    const queryClient = useQueryClient();
+
     const { mutateAsync: deleteAccount, isPending: isDeleting } =
-        useDeleteAccountMutation({
-            onSuccess: () => {
-                // showSuccessToast("Xóa tài khoản thành công");
-            },
-            onError: () => {
-                // showErrorToast("Xóa tài khoản thất bại");
-            },
-        });
+        useDeleteAccountMutation({ skipInvalidate: true });
 
     const handleDelete = async (ids?: string[]) => {
         const list = ids ?? selectedIds;
@@ -372,10 +368,12 @@ const AccountManagementPage = () => {
         setConfirmDeleteOpened(false);
         setIdsToDelete([]);
         setSelectedIds([]);
+        // Invalidate once after all mutations complete
+        queryClient.invalidateQueries({ queryKey: ["accounts"] });
     };
 
     const { mutateAsync: loginAccount, isPending: isLoggingIn } =
-        useLoginAccountMutation({});
+        useLoginAccountMutation({ skipInvalidate: true });
 
     const handleLoginAccount = async (ids: string | string[]) => {
         const list = Array.isArray(ids) ? ids : [ids];
@@ -389,9 +387,9 @@ const AccountManagementPage = () => {
         if (success > 0)
             showSuccessToast(`Đăng nhập thành công ${success} tài khoản`);
         if (fail > 0) showErrorToast(`Đăng nhập thất bại ${fail} tài khoản`);
+        // Invalidate once after all mutations complete
+        queryClient.invalidateQueries({ queryKey: ["accounts"] });
     };
-
-    console.log({ selectedIds });
 
     return (
         <div className="h-full flex flex-col">

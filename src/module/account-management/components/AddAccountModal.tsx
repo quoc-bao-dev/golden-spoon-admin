@@ -1,8 +1,17 @@
-import { Modal, Textarea, Text, Button, Stack, Group } from "@mantine/core";
+import {
+    Modal,
+    Textarea,
+    Text,
+    Button,
+    Stack,
+    Group,
+    ScrollArea,
+} from "@mantine/core";
 import { useState } from "react";
 import { showErrorToast, showSuccessToast } from "@/core/components/ui";
 import { useCreateAccountMutation } from "@/service/accounts";
 import { AxiosError } from "axios";
+import { useQueryClient } from "@tanstack/react-query";
 
 type AddAccountModalProps = {
     opened: boolean;
@@ -22,8 +31,10 @@ export const AddAccountModal = ({
 }: AddAccountModalProps) => {
     const [accountList, setAccountList] = useState("");
     const [lineErrors, setLineErrors] = useState<string[]>([]);
-    const { mutateAsync: createAccount, isPending } =
-        useCreateAccountMutation();
+    const queryClient = useQueryClient();
+    const { mutateAsync: createAccount, isPending } = useCreateAccountMutation({
+        skipInvalidate: true,
+    });
 
     const handleSubmit = async () => {
         const lines = accountList
@@ -124,6 +135,11 @@ export const AddAccountModal = ({
 
         setLineErrors(newErrors);
 
+        // Invalidate once after all mutations complete
+        if (successCount > 0) {
+            queryClient.invalidateQueries({ queryKey: ["accounts"] });
+        }
+
         // Summary toasts
         if (successCount > 0) {
             showSuccessToast(`Tạo thành công ${successCount} tài khoản`);
@@ -202,18 +218,19 @@ export const AddAccountModal = ({
 
                 {/* show error message */}
                 {lineErrors.some((m) => m) && (
-                    <Stack
-                        gap={4}
-                        className="bg-red-50 rounded-md p-2 border border-red-200"
-                    >
-                        {lineErrors.map((msg, idx) =>
-                            msg ? (
-                                <Text key={idx} size="sm" c="red">
-                                    Dòng {idx + 1}: {msg}
-                                </Text>
-                            ) : null
-                        )}
-                    </Stack>
+                    <div className="bg-red-50 rounded-md p-2 border border-red-200">
+                        <ScrollArea h={200}>
+                            <Stack gap={4}>
+                                {lineErrors.map((msg, idx) =>
+                                    msg ? (
+                                        <Text key={idx} size="sm" c="red">
+                                            Dòng {idx + 1}: {msg}
+                                        </Text>
+                                    ) : null
+                                )}
+                            </Stack>
+                        </ScrollArea>
+                    </div>
                 )}
 
                 {/* Action Buttons */}

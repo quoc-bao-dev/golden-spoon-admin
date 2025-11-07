@@ -26,9 +26,13 @@ export type VoucherItem = {
 };
 
 export type VouchersParams = {
-    page?: number;
-    page_size?: number;
-    sort?: "newest" | "oldest" | string;
+    page?: number; // Default: 1, Minimum: 1
+    page_size?: number; // Default: 20, Minimum: 1, Maximum: 100
+    search?: string; // Search by title
+    min_value?: number; // Min voucher value
+    max_value?: number; // Max voucher value
+    account_id?: string; // Filter by account
+    sort?: "newest" | "price_asc" | "price_desc" | "expiry_soon" | string; // Default: "newest"
 };
 
 export type VouchersResponse = {
@@ -72,9 +76,10 @@ export type VoucherGroup = {
 };
 
 export type MyOffersParams = {
-    page?: number;
-    page_size?: number;
-    sort?: "newest" | "oldest" | string;
+    page?: number; // Default: 1, Minimum: 1
+    page_size?: number; // Default: 20, Minimum: 1, Maximum: 100
+    search?: string; // Search by title
+    sort?: "newest" | "price_asc" | "price_desc" | "expiry_soon" | string; // Default: "newest"
 };
 
 export type MyOffersResponse = {

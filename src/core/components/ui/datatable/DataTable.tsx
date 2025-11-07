@@ -5,10 +5,10 @@ import {
     Pagination,
     ScrollArea,
     Select,
-    Table,
     Skeleton,
+    Table,
 } from "@mantine/core";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Nodata } from "../Nodata";
 import { DataTableProps, GetRowId } from "./types";
 
@@ -59,6 +59,41 @@ export function DataTable<T>(props: DataTableProps<T>) {
         onSelectionChange
     );
 
+    const [isShiftPressed, setIsShiftPressed] = useState(false);
+    const [isCtrlOrCmdPressed, setIsCtrlOrCmdPressed] = useState(false);
+
+    // Track Shift, Ctrl, and Cmd key state for cursor pointer
+    useEffect(() => {
+        if (!selectable) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Shift") {
+                setIsShiftPressed(true);
+            }
+            if (e.ctrlKey || e.metaKey) {
+                setIsCtrlOrCmdPressed(true);
+            }
+        };
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (e.key === "Shift") {
+                setIsShiftPressed(false);
+            }
+            // Check if Ctrl or Cmd is still pressed
+            if (!e.ctrlKey && !e.metaKey) {
+                setIsCtrlOrCmdPressed(false);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("keyup", handleKeyUp);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("keyup", handleKeyUp);
+        };
+    }, [selectable]);
+
     const allIdsOnPage = useMemo(
         () => data.map((r, i) => rowIdGetter(r, i)),
         [data, rowIdGetter]
@@ -72,9 +107,11 @@ export function DataTable<T>(props: DataTableProps<T>) {
 
     const toggleRow = (id: string) => {
         if (!selectable) return;
-        if (selected.includes(id))
+        if (selected.includes(id)) {
             setSelected(selected.filter((x) => x !== id));
-        else setSelected([...selected, id]);
+        } else {
+            setSelected([...selected, id]);
+        }
     };
 
     const toggleAll = () => {
@@ -195,18 +232,32 @@ export function DataTable<T>(props: DataTableProps<T>) {
                                   ))
                                 : data.map((row, rowIndex) => {
                                       const id = rowIdGetter(row, rowIndex);
+                                      const shouldShowPointer =
+                                          selectable &&
+                                          (isShiftPressed ||
+                                              isCtrlOrCmdPressed ||
+                                              rowEvents?.onRowClick);
                                       return (
                                           <Table.Tr
                                               key={id}
                                               className="border-b! border-dashed border-gray-200!  "
-                                              onClick={() =>
-                                                  rowEvents?.onRowClick?.(
-                                                      row,
-                                                      rowIndex
-                                                  )
-                                              }
+                                              onClick={(e) => {
+                                                  if (
+                                                      selectable &&
+                                                      (e.shiftKey ||
+                                                          e.ctrlKey ||
+                                                          e.metaKey)
+                                                  ) {
+                                                      toggleRow(id);
+                                                  } else {
+                                                      rowEvents?.onRowClick?.(
+                                                          row,
+                                                          rowIndex
+                                                      );
+                                                  }
+                                              }}
                                               style={{
-                                                  cursor: rowEvents?.onRowClick
+                                                  cursor: shouldShowPointer
                                                       ? "pointer"
                                                       : undefined,
                                               }}
@@ -217,9 +268,17 @@ export function DataTable<T>(props: DataTableProps<T>) {
                                               {selectable && (
                                                   <Table.Td
                                                       className="align-middle"
-                                                      onClick={(e) =>
-                                                          e.stopPropagation()
-                                                      }
+                                                      onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          // Allow Shift/Ctrl/Cmd + Click on checkbox cell
+                                                          if (
+                                                              e.shiftKey ||
+                                                              e.ctrlKey ||
+                                                              e.metaKey
+                                                          ) {
+                                                              toggleRow(id);
+                                                          }
+                                                      }}
                                                   >
                                                       <Checkbox
                                                           color="brand"
@@ -282,7 +341,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                             onPageSizeChange?.(size);
                             onPageChange?.(1);
                         }}
-                        data={["5", "10", "20", "50"]}
+                        data={["5", "10"]}
                         className="w-[72px]"
                         comboboxProps={{ withinPortal: false }}
                     />

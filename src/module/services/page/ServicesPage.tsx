@@ -40,20 +40,6 @@ const ServicesPage = () => {
     const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
     const [modalOpened, setModalOpened] = useState(false);
 
-    // Mock data
-    const coupons: Coupon[] = Array(16)
-        .fill(null)
-        .map((_, i) => ({
-            id: String(i + 1),
-            name: "Coupon 50k",
-            merchant: "Golden Gate",
-            value: 50000,
-            price: 50000,
-            validFrom: "01/10/2025",
-            validTo: "31/12/2100",
-            category: i % 3 === 0 ? "all" : i % 3 === 1 ? "for-you" : "partner",
-        }));
-
     const formatCurrency = (amount: number) => {
         return `${amount.toLocaleString("vi-VN")}₫`;
     };
@@ -65,14 +51,20 @@ const ServicesPage = () => {
 
     const sortOptions = [
         { value: "newest", label: "Mới nhất" },
-        { value: "bestselling", label: "Bán chạy nhất" },
-        { value: "lowest-price", label: "Giá thấp nhất" },
-        { value: "highest-discount", label: "Giảm sâu nhất" },
+        { value: "price_asc", label: "Giá thấp nhất" },
+        { value: "price_desc", label: "Giá cao nhất" },
+        { value: "expiry_soon", label: "Sắp hết hạn" },
     ];
 
-    const { data: vouchers, isLoading: isVouchersLoading } = useVouchersQuery();
+    const { data: vouchers, isLoading: isVouchersLoading } = useVouchersQuery({
+        search: searchValue || undefined,
+        sort: sortBy || undefined,
+    });
 
-    const { data: myOffers, isLoading: isMyOffersLoading } = useMyOffersQuery();
+    const { data: myOffers, isLoading: isMyOffersLoading } = useMyOffersQuery({
+        search: searchValue || undefined,
+        sort: sortBy || undefined,
+    });
     const isLoading =
         activeCategory === "my-offers" ? isMyOffersLoading : isVouchersLoading;
 
@@ -132,42 +124,9 @@ const ServicesPage = () => {
         return list;
     }, [myOffers]);
 
-    // Prefer API data based on activeCategory, fallback to mock
-    const preferred =
+    // Use API data based on activeCategory
+    const sortedCoupons =
         activeCategory === "my-offers" ? myOffersCoupons : remoteCoupons;
-    const sourceCoupons = preferred.length > 0 ? preferred : coupons;
-
-    // Filter coupons
-    const filteredCoupons = sourceCoupons.filter((coupon) => {
-        const matchesSearch =
-            !searchValue ||
-            coupon.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-            coupon.merchant.toLowerCase().includes(searchValue.toLowerCase());
-
-        const matchesCategory =
-            activeCategory === "all" || coupon.category === activeCategory;
-
-        return matchesSearch && matchesCategory;
-    });
-
-    // Sort coupons
-    const sortedCoupons = [...filteredCoupons].sort((a, b) => {
-        if (sortBy === "newest") {
-            return b.id.localeCompare(a.id);
-        }
-        if (sortBy === "bestselling") {
-            // Mock: sort by ID for demonstration
-            return a.id.localeCompare(b.id);
-        }
-        if (sortBy === "lowest-price") {
-            return a.price - b.price;
-        }
-        if (sortBy === "highest-discount") {
-            // Mock: higher value = higher discount
-            return b.value - a.value;
-        }
-        return 0;
-    });
 
     const handleCouponClick = (coupon: Coupon) => {
         setSelectedCoupon(coupon);
@@ -378,7 +337,7 @@ const ServicesPage = () => {
             </ScrollArea>
 
             {/* Empty State */}
-            {sortedCoupons.length === 0 && (
+            {sortedCoupons.length === 0 && !isLoading && (
                 <div className="flex items-center justify-center h-full">
                     <Nodata message="Không tìm thấy dịch vụ nào" />
                 </div>

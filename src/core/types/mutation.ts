@@ -4,6 +4,7 @@ import { AxiosError } from "axios";
 export type MutationCallbacks<TResponse> = {
     onSuccess?: (data: TResponse) => void;
     onError?: (error: AxiosError) => void;
+    skipInvalidate?: boolean; // Skip invalidate queries (useful for batch operations)
 };
 
 // Type helper để extract 4 callbacks từ UseMutationOptions

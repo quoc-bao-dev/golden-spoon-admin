@@ -1,6 +1,7 @@
 import { Button } from "@mantine/core";
 import { Icon, showErrorToast, showSuccessToast } from "@/core/components/ui";
 import { useSyncAccountMutation } from "@/service/accounts";
+import { useQueryClient } from "@tanstack/react-query";
 
 type AccountActionsBarProps = {
     searchValue: string;
@@ -23,8 +24,9 @@ export const AccountActionsBar = ({
     isDeleting,
     isLoggingIn,
 }: AccountActionsBarProps) => {
+    const queryClient = useQueryClient();
     const { mutateAsync: syncAccount, isPending: isSyncing } =
-        useSyncAccountMutation();
+        useSyncAccountMutation({ skipInvalidate: true });
 
     const handleSync = async () => {
         if (!selectedIds || selectedIds.length === 0) return;
@@ -36,6 +38,8 @@ export const AccountActionsBar = ({
         if (success > 0)
             showSuccessToast(`Đồng bộ thành công ${success} tài khoản`);
         if (fail > 0) showErrorToast(`Đồng bộ thất bại ${fail} tài khoản`);
+        // Invalidate once after all mutations complete
+        queryClient.invalidateQueries({ queryKey: ["accounts"] });
     };
     return (
         <div className="flex items-center justify-between gap-4 min-h-[48px]">

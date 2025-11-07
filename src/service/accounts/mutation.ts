@@ -14,6 +14,7 @@ import {
 export const useCreateAccountMutation = ({
     onSuccess,
     onError,
+    skipInvalidate = false,
 }: MutationCallbacks<CreateAccountResponse> = {}) => {
     const queryClient = useQueryClient();
     return useMutation<CreateAccountResponse, AxiosError, CreateAccountPayload>(
@@ -21,7 +22,9 @@ export const useCreateAccountMutation = ({
             mutationFn: apiAccounts.create,
             onSuccess: (data) => {
                 onSuccess?.(data);
-                queryClient.invalidateQueries({ queryKey: ["accounts"] });
+                if (!skipInvalidate) {
+                    queryClient.invalidateQueries({ queryKey: ["accounts"] });
+                }
             },
             onError: (error) => {
                 onError?.(error);
@@ -33,13 +36,16 @@ export const useCreateAccountMutation = ({
 export const useDeleteAccountMutation = ({
     onSuccess,
     onError,
+    skipInvalidate = false,
 }: MutationCallbacks<void> = {}) => {
     const queryClient = useQueryClient();
     return useMutation<void, AxiosError, string>({
         mutationFn: apiAccounts.delete,
         onSuccess: (data) => {
             onSuccess?.(data);
-            queryClient.invalidateQueries({ queryKey: ["accounts"] });
+            if (!skipInvalidate) {
+                queryClient.invalidateQueries({ queryKey: ["accounts"] });
+            }
         },
         onError: (error) => {
             onError?.(error);
@@ -50,13 +56,16 @@ export const useDeleteAccountMutation = ({
 export const useLoginAccountMutation = ({
     onSuccess,
     onError,
+    skipInvalidate = false,
 }: MutationCallbacks<AccountLoginResponse> = {}) => {
     const queryClient = useQueryClient();
     return useMutation<AccountLoginResponse, AxiosError, string>({
         mutationFn: apiAccounts.login,
         onSuccess: (data) => {
             onSuccess?.(data);
-            queryClient.invalidateQueries({ queryKey: ["accounts"] });
+            if (!skipInvalidate) {
+                queryClient.invalidateQueries({ queryKey: ["accounts"] });
+            }
         },
         onError: (error) => {
             onError?.(error);
@@ -67,13 +76,16 @@ export const useLoginAccountMutation = ({
 export const useSyncAccountMutation = ({
     onSuccess,
     onError,
+    skipInvalidate = false,
 }: MutationCallbacks<AccountSyncResponse> = {}) => {
     const queryClient = useQueryClient();
     return useMutation<AccountSyncResponse, AxiosError, string>({
         mutationFn: apiAccounts.sync,
         onSuccess: (data) => {
             onSuccess?.(data);
-            queryClient.invalidateQueries({ queryKey: ["accounts"] });
+            if (!skipInvalidate) {
+                queryClient.invalidateQueries({ queryKey: ["accounts"] });
+            }
         },
         onError: (error) => {
             onError?.(error);
@@ -84,6 +96,7 @@ export const useSyncAccountMutation = ({
 export const useUpdateAccountMutation = ({
     onSuccess,
     onError,
+    skipInvalidate = false,
 }: MutationCallbacks<UpdateAccountResponse> = {}) => {
     const queryClient = useQueryClient();
     return useMutation<UpdateAccountResponse, AxiosError, UpdateAccountPayload>(
@@ -91,7 +104,9 @@ export const useUpdateAccountMutation = ({
             mutationFn: apiAccounts.update,
             onSuccess: (data) => {
                 onSuccess?.(data);
-                queryClient.invalidateQueries({ queryKey: ["accounts"] });
+                if (!skipInvalidate) {
+                    queryClient.invalidateQueries({ queryKey: ["accounts"] });
+                }
             },
             onError: (error) => {
                 onError?.(error);
