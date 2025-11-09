@@ -41,7 +41,7 @@ const TransactionHistoryPage = () => {
     const rows: TransactionRow[] = useMemo(() => {
         const items = historyData?.data.items ?? [];
         return items.map((item) => ({
-            date: String((item as any).created_at ?? ""),
+            date: String((item as any).completed_at ?? ""),
             type: "Nạp tiền",
             amount: Number((item as any).amount ?? 0),
             balance: Number((item as any).new_balance ?? 0),

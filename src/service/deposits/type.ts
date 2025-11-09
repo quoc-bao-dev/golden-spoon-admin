@@ -30,6 +30,7 @@ export type DepositHistoryItem = {
     created_at: string;
     content: string;
     new_balance: string;
+    completed_at: string;
     [key: string]: any;
 };
 
