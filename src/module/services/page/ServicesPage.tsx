@@ -199,7 +199,7 @@ const ServicesPage = () => {
             {/* Coupon Grid */}
             <ScrollArea>
                 <SimpleGrid
-                    cols={{ base: 1, sm: 2, md: 2, lg: 4 }}
+                    cols={{ base: 1, sm: 2, md: 2, lg: 3, xl: 4 }}
                     spacing="lg"
                 >
                     {isLoading &&

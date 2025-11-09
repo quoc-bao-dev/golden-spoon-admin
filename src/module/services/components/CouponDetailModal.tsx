@@ -156,8 +156,8 @@ export const CouponDetailModal = ({
         >
             <div className="flex flex-col md:flex-row">
                 {/* Left Section - Image */}
-                <div className="w-full md:w-[50%] relative  flex items-center justify-center p-6">
-                    <div className="relative max-h-[534px] w-full h-full  ">
+                <div className="w-full md:w-[50%] relative  flex items-center justify-center px-6 pb-6">
+                    <div className="relative max-h-[534px] w-full h-full ">
                         {/* Image */}
                         <Image
                             src={getBrandImageUrl(
@@ -331,7 +331,7 @@ export const CouponDetailModal = ({
                                     </span>
                                 </Group>
                                 <Collapse in={voucherDetailsOpen}>
-                                    <Stack gap="sm" pl="md">
+                                    <Stack gap="sm" pt="xs">
                                         <Divider my="3px" color="gray.2" />
 
                                         {/* === row === */}
@@ -365,7 +365,7 @@ export const CouponDetailModal = ({
                                             </div>
                                         </div>
 
-                                        <Divider my="md" color="gray.2" />
+                                        <Divider my="3px" color="gray.2" />
 
                                         {/* === row === */}
                                         <div className="flex w-full  gap-3">
