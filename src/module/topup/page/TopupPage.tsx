@@ -59,9 +59,9 @@ export const TopupPage = () => {
         <div className="h-full flex flex-col items-center justify-center">
             <Grid
                 gutter="lg"
-                className=" min-h-0 bg-white p-4 rounded-lg shadow-2xl/8 w-[1000px]"
+                className=" min-h-0 bg-white p-4 rounded-lg shadow-2xl/8 xl:w-[1000px]"
             >
-                <Grid.Col span={{ base: 12, md: 6 }}>
+                <Grid.Col span={{ base: 12, lg: 6 }}>
                     <Card
                         radius="lg"
                         shadow="none"
@@ -232,7 +232,7 @@ export const TopupPage = () => {
                     </Card>
                 </Grid.Col>
 
-                <Grid.Col span={{ base: 12, md: 6 }}>
+                <Grid.Col span={{ base: 12, lg: 6 }}>
                     <Card
                         radius="lg"
                         className="h-full flex flex-col items-center justify-center bg-linear-to-b from-[#FCE88D] to-[#EA8A13]"
