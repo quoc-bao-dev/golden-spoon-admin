@@ -341,7 +341,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                             onPageSizeChange?.(size);
                             onPageChange?.(1);
                         }}
-                        data={["5", "10"]}
+                        data={["5", "10", "20", "50", "100", "500"]}
                         className="w-[72px]"
                         comboboxProps={{ withinPortal: false }}
                     />
