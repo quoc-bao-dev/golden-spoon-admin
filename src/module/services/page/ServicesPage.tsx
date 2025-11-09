@@ -1,6 +1,7 @@
 "use client";
 
-import { Icon, ImageCmp, Nodata } from "@/core/components/ui";
+import { Icon, Nodata } from "@/core/components/ui";
+import { getBrandImageUrl } from "@/core/util/imageUrl";
 import { useMyOffersQuery, useVouchersQuery } from "@/service/vouchers";
 import {
     Badge,
@@ -20,7 +21,6 @@ import {
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { CouponDetailModal } from "../components";
-import { getBrandImageUrl } from "@/core/util/imageUrl";
 
 export type Coupon = {
     id: string;

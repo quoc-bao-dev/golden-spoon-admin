@@ -1,5 +1,5 @@
-import { Modal, Button, Text, Stack, Group, Alert } from "@mantine/core";
-import { Icon } from "@/core/components/ui";
+import { Alert, Button, Group, Modal, Stack, Text } from "@mantine/core";
+import { IconAlertTriangle } from "@tabler/icons-react";
 
 type ProcessingInterruptedModalProps = {
     opened: boolean;
@@ -28,7 +28,11 @@ export const ProcessingInterruptedModal = ({
             onClose={onClose}
             title={
                 <Group gap="xs">
-                    <Icon icon="icon-info-red" size={20} />
+                    <IconAlertTriangle
+                        size={24}
+                        stroke={1.5}
+                        color="var(--mantine-color-orange-6)"
+                    />
                     <Text fw={600} size="lg">
                         Cảnh báo
                     </Text>
@@ -37,22 +41,26 @@ export const ProcessingInterruptedModal = ({
             centered
             size="md"
         >
-            <Stack gap="md">
+            <Stack gap="lg">
                 <Alert
                     color="orange"
-                    icon={<Icon icon="icon-info-red" size={18} />}
+                    variant="light"
+                    icon={<IconAlertTriangle size={20} stroke={1.5} />}
+                    radius="md"
                 >
-                    <Text size="sm" fw={500} mb="xs">
-                        Bạn đang trong quá trình xử lý đăng nhập
-                    </Text>
-                    <Text size="sm" c="dimmed">
-                        Nếu bạn reload trang bây giờ, quá trình xử lý sẽ bị hủy
-                        và bạn sẽ mất tiến trình hiện tại. Bạn có chắc chắn muốn
-                        tiếp tục?
-                    </Text>
+                    <Stack gap="xs">
+                        <Text size="sm" fw={600} c="orange.7">
+                            Bạn đang trong quá trình xử lý đăng nhập
+                        </Text>
+                        <Text size="sm" c="dimmed" lh={1.6}>
+                            Nếu bạn reload trang bây giờ, quá trình xử lý sẽ bị
+                            hủy và bạn sẽ mất tiến trình hiện tại. Bạn có chắc
+                            chắn muốn tiếp tục?
+                        </Text>
+                    </Stack>
                 </Alert>
 
-                <Group justify="flex-end" gap="sm" mt="md">
+                <Group justify="flex-end" gap="sm" mt="xs">
                     <Button variant="default" onClick={onClose}>
                         Hủy
                     </Button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon, ImageCmp } from "@/core/components/ui";
+import { formatCurrencyVND } from "@/core/components/ui/datatable/hooks";
 import { _Image } from "@/core/const";
 import { useAuthAction, useAuthStore } from "@/module/auth";
 import {
@@ -301,14 +302,11 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
                                 <Box className="flex items-center gap-2 mt-1">
                                     <Icon icon="icon-wallet" size={22} />
                                     <Text fw={600} c="#F59F00" size="sm">
-                                        {user?.balance}{" "}
-                                        <span
-                                            style={{
-                                                textDecoration: "underline",
-                                            }}
-                                        >
-                                            đ
-                                        </span>
+                                        {user?.balance
+                                            ? formatCurrencyVND(
+                                                  Number(user.balance) || 0
+                                              )
+                                            : "0 đ"}
                                     </Text>
                                 </Box>
                             </Box>

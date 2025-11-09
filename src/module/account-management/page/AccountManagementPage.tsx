@@ -6,7 +6,16 @@ import {
     showErrorToast,
     showSuccessToast,
 } from "@/core/components/ui";
-import type { AccountAuthStatus } from "@/service/accounts";
+import { _Image } from "@/core/const/asset/image";
+import {
+    useBatchProcessor,
+    type BatchResult,
+} from "@/core/hooks/useBatchProcessor";
+import { usePreventReload } from "@/core/hooks/usePreventReload";
+import type {
+    AccountAuthStatus,
+    AccountLoginResponse,
+} from "@/service/accounts";
 import {
     useAccountsQuery,
     useDeleteAccountMutation,
@@ -24,26 +33,19 @@ import {
     Tooltip,
 } from "@mantine/core";
 import { useSessionStorage } from "@mantine/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { AddAccountModal } from "../components";
 import AccountActionsBar from "../components/AccountActionsBar";
 import AccountFilterBar from "../components/AccountFilterBar";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
-import UpdateAccountModal from "../components/UpdateAccountModal";
 import { ProcessingInterruptedModal } from "../components/ProcessingInterruptedModal";
-import { _Image } from "@/core/const/asset/image";
-import { useQueryClient } from "@tanstack/react-query";
-import {
-    useBatchProcessor,
-    type BatchResult,
-} from "@/core/hooks/useBatchProcessor";
-import { usePreventReload } from "@/core/hooks/usePreventReload";
-import type { AccountLoginResponse } from "@/service/accounts";
+import UpdateAccountModal from "../components/UpdateAccountModal";
 
 // Config: Số lượng request đăng nhập xử lý trong 1 lần (batch size)
-const LOGIN_BATCH_SIZE = 2;
+const LOGIN_BATCH_SIZE = 3;
 // Config: Delay (ms) giữa các batch (mặc định: 0)
-const LOGIN_BATCH_DELAY = 20000;
+const LOGIN_BATCH_DELAY = 0;
 
 type AccountRow = {
     id: string;
@@ -288,7 +290,7 @@ const AccountManagementPage = () => {
                         >
                             <div className="flex items-center gap-2">
                                 <Loader size={14} color="#1C7ED6" />
-                                <span>Đang đăng nhập</span>
+                                <span>Logging in...</span>
                             </div>
                         </Badge>
                     );
