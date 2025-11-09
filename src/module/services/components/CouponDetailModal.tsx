@@ -1,22 +1,23 @@
 "use client";
 
-import { Icon, ImageCmp } from "@/core/components/ui";
+import { Icon, showErrorToast, showSuccessToast } from "@/core/components/ui";
+import { getBrandImageUrl } from "@/core/util/imageUrl";
+import { useClaimVoucherMutation } from "@/service/vouchers";
 import {
-    Badge,
+    ActionIcon,
     Button,
+    Collapse,
+    Divider,
     Group,
     Modal,
-    NumberInput,
     ScrollArea,
     Select,
     Stack,
     Text,
     Title,
-    Collapse,
-    Checkbox,
-    ActionIcon,
 } from "@mantine/core";
-import { useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 import type { Coupon } from "../page/ServicesPage";
 
 type CouponDetailModalProps = {
@@ -32,29 +33,112 @@ export const CouponDetailModal = ({
     coupon,
     onBuy,
 }: CouponDetailModalProps) => {
-    const [quantity, setQuantity] = useState(1);
     const [selectedAccount, setSelectedAccount] = useState<string | null>(
-        "peachytran420@gmail.com"
+        coupon?.listAccounts?.[0] ?? null
     );
-    const [setAsDefault, setSetAsDefault] = useState(false);
     const [voucherDetailsOpen, setVoucherDetailsOpen] = useState(true);
-    const [termsOpen, setTermsOpen] = useState(false);
+    const [countdown, setCountdown] = useState({
+        days: 0,
+        hours: 0,
+        minutes: 0,
+    });
 
-    if (!coupon) return null;
+    // Update selectedAccount when coupon changes
+    useEffect(() => {
+        if (coupon?.listAccounts?.[0]) {
+            setSelectedAccount(coupon.listAccounts[0]);
+        }
+    }, [coupon?.listAccounts]);
+
+    // Calculate countdown from validTo date
+    useEffect(() => {
+        if (!coupon?.validTo) return;
+
+        const updateCountdown = () => {
+            try {
+                // Parse validTo date (format: DD/MM/YYYY)
+                const [day, month, year] = coupon.validTo.split("/");
+                const expiryDate = new Date(
+                    parseInt(year),
+                    parseInt(month) - 1,
+                    parseInt(day),
+                    23,
+                    59,
+                    59
+                );
+                const now = new Date();
+                const diff = expiryDate.getTime() - now.getTime();
+
+                if (diff > 0) {
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor(
+                        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+                    );
+                    const minutes = Math.floor(
+                        (diff % (1000 * 60 * 60)) / (1000 * 60)
+                    );
+
+                    setCountdown({ days, hours, minutes });
+                } else {
+                    setCountdown({ days: 0, hours: 0, minutes: 0 });
+                }
+            } catch (error) {
+                console.error("Error calculating countdown:", error);
+            }
+        };
+
+        updateCountdown();
+        const interval = setInterval(updateCountdown, 1000); // Update every second
+
+        return () => clearInterval(interval);
+    }, [coupon?.validTo]);
+
+    const optionsAccounts = useMemo(() => {
+        return coupon?.listAccounts?.map((account) => ({
+            label: account,
+            value: account,
+        }));
+    }, [coupon]);
+
+    const { mutate: claimVoucher, isPending: isClaiming } =
+        useClaimVoucherMutation({
+            onSuccess: (data) => {
+                showSuccessToast(data.message || "Claim voucher thành công!");
+                if (onBuy) {
+                    onBuy(coupon!, 1);
+                }
+                onClose();
+            },
+            onError: (error) => {
+                const errorMessage =
+                    (error.response?.data as any)?.message ||
+                    error.message ||
+                    "Claim voucher thất bại. Vui lòng thử lại.";
+                showErrorToast(errorMessage);
+            },
+        });
 
     const formatCurrency = (amount: number) => {
         return `${amount.toLocaleString("vi-VN")}₫`;
     };
 
-    const discountAmount = coupon.value - coupon.price;
-    const discountPercent = Math.round((discountAmount / coupon.value) * 100);
-
     const handleBuy = () => {
-        if (onBuy) {
-            onBuy(coupon, quantity);
+        // Validate: Bắt buộc chọn tài khoản
+        if (!selectedAccount) {
+            showErrorToast("Vui lòng chọn tài khoản");
+            return;
         }
-        onClose();
+
+        // Call claim API
+        claimVoucher({
+            voucherId: coupon!.id,
+            payload: {
+                account_customer_id: selectedAccount,
+            },
+        });
     };
+
+    if (!coupon) return null;
 
     return (
         <Modal
@@ -62,7 +146,7 @@ export const CouponDetailModal = ({
             onClose={onClose}
             radius="md"
             centered
-            withCloseButton={false}
+            withCloseButton={true}
             size="auto"
             styles={{
                 body: {
@@ -72,28 +156,23 @@ export const CouponDetailModal = ({
         >
             <div className="flex flex-col md:flex-row">
                 {/* Left Section - Image */}
-                <div className="w-full md:w-[50%] relative bg-gray-50 flex items-center justify-center p-6">
-                    <div className="relative h-full w-full  ">
-                        {/* Discount Badge */}
-                        <Badge
-                            className="absolute top-0 left-0 z-10 bg-red-500 text-white"
-                            size="lg"
-                        >
-                            -{discountPercent}%
-                        </Badge>
-
+                <div className="w-full md:w-[50%] relative  flex items-center justify-center p-6">
+                    <div className="relative max-h-[534px] w-full h-full  ">
                         {/* Image */}
-                        <ImageCmp
-                            src="image-commbo"
-                            className="w-full h-full object-cover rounded-lg"
+                        <Image
+                            src={getBrandImageUrl(
+                                coupon.brandFeatureImageFileName
+                            )}
+                            alt={coupon.merchant}
                             width={1000}
                             height={1000}
+                            className="w-full h-full object-contain rounded-lg"
                         />
                     </div>
                 </div>
 
                 {/* Right Section - Details with ScrollArea */}
-                <div className="w-full md:w-[60%] flex flex-col max-h-[80vh] py-6">
+                <div className="w-full md:w-[50%] flex flex-col max-h-[80vh] pb-6">
                     <ScrollArea className="flex-1">
                         <Stack gap="md" px="md">
                             {/* Header with close button */}
@@ -103,77 +182,83 @@ export const CouponDetailModal = ({
                                 pos={"sticky"}
                                 top={0}
                                 bg="white"
-                                pt="md"
                                 className="z-100"
                             >
-                                <Title order={3} fw={600} className="flex-1">
-                                    Coupon {formatCurrency(coupon.value)}
-                                </Title>
-                                <ActionIcon
-                                    variant="subtle"
-                                    onClick={onClose}
-                                    size="lg"
+                                <Title
+                                    order={3}
+                                    fw={700}
+                                    size={"24px"}
+                                    className="flex-1"
                                 >
-                                    <Icon icon="icon-close" size={20} />
-                                </ActionIcon>
+                                    {coupon.name}
+                                </Title>
                             </Group>
 
                             {/* Offer Status */}
-                            <Group gap="xs" align="center">
-                                <Text size="sm" c="dimmed">
-                                    Kết thúc sau
-                                </Text>
-                                <Badge color="red" variant="light">
-                                    04 : 20 : 59
-                                </Badge>
-                            </Group>
+                            <Group gap="lg" align="center">
+                                <div className="flex gap-2">
+                                    <Icon icon="icon-fire" size={20} />
+                                    <Text size="sm" c="#FD7E14">
+                                        Kết thúc sau
+                                    </Text>
+                                </div>
+                                <div className="flex gap-2 ">
+                                    <div className="flex flex-col gap-2 items-center ">
+                                        <div className="text-white bg-[#FD7E14] text-xs rounded-lg font-medium size-[26px] flex items-center justify-center">
+                                            {String(countdown.days).padStart(
+                                                2,
+                                                "0"
+                                            )}
+                                        </div>
+                                        <p className="text-gray-400 text-xs">
+                                            ngày
+                                        </p>
+                                    </div>
 
-                            {/* Purchase Counter */}
-                            <Group gap="xs" align="center">
-                                <Icon icon="icon-user-search" size={16} />
-                                <Text size="sm" c="dimmed">
-                                    69K Đã mua
-                                </Text>
-                            </Group>
+                                    <div className="text-[#FD7E14] "> : </div>
 
-                            {/* Product Description */}
-                            <Text
-                                size="sm"
-                                c="dimmed"
-                                className="leading-relaxed"
-                            >
-                                Trải nghiệm Dimsum thủ công tại Crystal Jade
-                                Hong Kong Kitchen với những món ăn được làm thủ
-                                công, mang đến cho bạn một hành trình ẩm thực
-                                đáng nhớ.
-                            </Text>
+                                    {/* hours */}
+                                    <div className="flex flex-col gap-2 items-center ">
+                                        <div className="text-white bg-[#FD7E14] text-xs rounded-lg font-medium size-[26px] flex items-center justify-center">
+                                            {String(countdown.hours).padStart(
+                                                2,
+                                                "0"
+                                            )}
+                                        </div>
+                                        <p className="text-gray-400 text-xs">
+                                            giờ
+                                        </p>
+                                    </div>
+
+                                    <div className="text-[#FD7E14] "> : </div>
+
+                                    {/* minutes */}
+                                    <div className="flex flex-col gap-2 items-center ">
+                                        <div className="text-white bg-[#FD7E14] text-xs rounded-lg font-medium size-[26px] flex items-center justify-center">
+                                            {String(countdown.minutes).padStart(
+                                                2,
+                                                "0"
+                                            )}
+                                        </div>
+                                        <p className="text-gray-400 text-xs">
+                                            phút
+                                        </p>
+                                    </div>
+                                </div>
+                            </Group>
 
                             {/* Quantity Selector */}
                             <div>
-                                <Text size="sm" fw={500} mb="xs">
-                                    Số lượng
+                                <Text size="sm" fw={500} className="-my-2!">
+                                    Số lượng:{" "}
+                                    <Text span c="dimmed" size="" fw={600}>
+                                        1
+                                    </Text>
                                 </Text>
-                                <NumberInput
-                                    value={quantity}
-                                    onChange={(value) =>
-                                        setQuantity(Number(value) || 1)
-                                    }
-                                    min={1}
-                                    max={99}
-                                    className="w-24"
-                                />
                             </div>
 
                             {/* Pricing Display */}
                             <Stack gap="xs">
-                                <Text
-                                    size="sm"
-                                    td="line-through"
-                                    c="dimmed"
-                                    className="line-through"
-                                >
-                                    {formatCurrency(coupon.value)}
-                                </Text>
                                 <Text size="xl" fw={700} c="red">
                                     {formatCurrency(coupon.price)}
                                 </Text>
@@ -187,33 +272,36 @@ export const CouponDetailModal = ({
                                 <Select
                                     value={selectedAccount}
                                     onChange={setSelectedAccount}
-                                    data={[
-                                        {
-                                            value: "peachytran420@gmail.com",
-                                            label: "peachytran420@gmail.com (69,420)",
-                                        },
-                                    ]}
+                                    defaultValue={
+                                        coupon?.listAccounts?.[0] ?? null
+                                    }
+                                    data={optionsAccounts}
                                     rightSection={
-                                        <span className="text-gray-500">▼</span>
+                                        <span className="text-gray-500">
+                                            <Icon
+                                                icon="icon-arrow-down"
+                                                size={24}
+                                            />
+                                        </span>
                                     }
-                                />
-                                <Checkbox
-                                    checked={setAsDefault}
-                                    onChange={(e) =>
-                                        setSetAsDefault(e.currentTarget.checked)
-                                    }
-                                    label="Đặt làm tài khoản mua mặc định"
-                                    mt="xs"
-                                    size="sm"
                                 />
                             </div>
 
                             {/* Buy Button */}
                             <Button
                                 size="lg"
-                                color="yellow"
-                                className="bg-[#FFD479] text-gray-900 hover:bg-[#FFC85A] w-full"
+                                style={{
+                                    justifyContent: "space-between!important",
+                                }}
+                                className="text-gray-900  w-full "
                                 onClick={handleBuy}
+                                c={"gray.9"}
+                                fw={700}
+                                loading={isClaiming}
+                                disabled={isClaiming}
+                                rightSection={
+                                    <Icon icon="icon-cart" size={24} />
+                                }
                             >
                                 Mua Ngay
                             </Button>
@@ -231,82 +319,69 @@ export const CouponDetailModal = ({
                                     }
                                     mb="xs"
                                 >
-                                    <Text fw={500} size="sm">
+                                    <Text fw={700} size="lg">
                                         Chi tiết voucher
                                     </Text>
                                     <span className="text-gray-600">
-                                        {voucherDetailsOpen ? "−" : "+"}
+                                        {voucherDetailsOpen ? (
+                                            <Icon icon="icon-minus" size={24} />
+                                        ) : (
+                                            <Icon icon="icon-plus" size={24} />
+                                        )}
                                     </span>
                                 </Group>
                                 <Collapse in={voucherDetailsOpen}>
                                     <Stack gap="sm" pl="md">
-                                        <div>
-                                            <Text size="sm" fw={500} mb={4}>
-                                                Địa điểm sử dụng
-                                            </Text>
-                                            <Text size="sm" c="dimmed">
-                                                Crystal Jade Kitchen HCM và HN
-                                            </Text>
+                                        <Divider my="3px" color="gray.2" />
+
+                                        {/* === row === */}
+                                        <div className="flex w-full  gap-3">
                                             <Text
                                                 size="sm"
-                                                c="blue"
-                                                className="cursor-pointer hover:underline"
+                                                fw={500}
+                                                mb={4}
+                                                className="w-[40%]"
+                                                c={"gray.4"}
                                             >
-                                                Xem tất cả chi nhánh
+                                                Địa điểm sử dụng
                                             </Text>
+                                            <div className="flex flex-col gap-1">
+                                                <Text size="sm" c="#121926">
+                                                    {coupon.merchant}
+                                                </Text>
+                                                <div className="flex gap-2 items-center ">
+                                                    <Text
+                                                        size="sm"
+                                                        c="blue"
+                                                        className="cursor-pointer hover:underline"
+                                                    >
+                                                        Xem tất cả chi nhánh
+                                                    </Text>
+                                                    <Icon
+                                                        icon="icon-arrow-up"
+                                                        size={16}
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Text size="sm" fw={500} mb={4}>
+
+                                        <Divider my="md" color="gray.2" />
+
+                                        {/* === row === */}
+                                        <div className="flex w-full  gap-3">
+                                            <Text
+                                                size="sm"
+                                                fw={500}
+                                                mb={4}
+                                                className="w-[40%]"
+                                                c={"gray.4"}
+                                            >
                                                 HSD
                                             </Text>
-                                            <Text size="sm" c="dimmed">
+                                            <Text size="sm" c="#121926">
                                                 {coupon.validTo}
                                             </Text>
                                         </div>
-                                        <div>
-                                            <Text size="sm" fw={500} mb={4}>
-                                                Thời gian áp dụng
-                                            </Text>
-                                            <Text size="sm" c="dimmed">
-                                                Từ thứ 2 đến thứ 5 hàng tuần
-                                            </Text>
-                                        </div>
-                                    </Stack>
-                                </Collapse>
-                            </div>
-
-                            {/* Terms and Conditions Section */}
-                            <div>
-                                <Group
-                                    justify="space-between"
-                                    align="center"
-                                    className="cursor-pointer"
-                                    onClick={() => setTermsOpen(!termsOpen)}
-                                    mb="xs"
-                                >
-                                    <Text fw={500} size="sm">
-                                        Chính sách và điều khoản sử dụng
-                                    </Text>
-                                    <span className="text-gray-600">
-                                        {termsOpen ? "−" : "+"}
-                                    </span>
-                                </Group>
-                                <Collapse in={termsOpen}>
-                                    <Stack gap="sm" pl="md">
-                                        <Text size="sm" c="dimmed">
-                                            • Voucher có giá trị trong thời gian
-                                            quy định
-                                        </Text>
-                                        <Text size="sm" c="dimmed">
-                                            • Không áp dụng với các chương trình
-                                            khuyến mãi khác
-                                        </Text>
-                                        <Text size="sm" c="dimmed">
-                                            • Voucher không thể hoàn tiền
-                                        </Text>
-                                        <Text size="sm" c="dimmed">
-                                            • Cần đặt chỗ trước khi sử dụng
-                                        </Text>
                                     </Stack>
                                 </Collapse>
                             </div>

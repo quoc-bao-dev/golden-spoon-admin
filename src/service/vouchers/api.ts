@@ -5,6 +5,8 @@ import {
     MyOffersParams,
     MyOffersResponse,
     VoucherSyncResponse,
+    ClaimVoucherPayload,
+    ClaimVoucherResponse,
 } from "./type";
 
 export const apiVouchers = {
@@ -26,6 +28,14 @@ export const apiVouchers = {
     sync: async (id: string) => {
         const response = await axiosInstant.post<VoucherSyncResponse>(
             `vouchers/sync/${id}`
+        );
+        return response.data;
+    },
+
+    claim: async (voucherId: string, payload: ClaimVoucherPayload) => {
+        const response = await axiosInstant.post<ClaimVoucherResponse>(
+            `vouchers/${voucherId}/claim`,
+            payload
         );
         return response.data;
     },

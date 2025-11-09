@@ -26,4 +26,10 @@ export const _Icon = {
     "icon-user-search": "/icon/common/icon-user-search.svg",
     "icon-gold-gate": "/icon/common/icon-gold-gate.svg",
     "icon-update": "/icon/common/icon-update.svg",
+    "icon-arrow-up": "/icon/common/icon-arrow-up.svg",
+    "icon-arrow-down": "/icon/common/icon-arrow-down.svg",
+    "icon-minus": "/icon/common/icon-minus.svg",
+    "icon-plus": "/icon/common/icon-plus.svg",
+    "icon-cart": "/icon/common/icon-cart.svg",
+    "icon-fire": "/icon/common/icon-fire.svg",
 };

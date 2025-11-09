@@ -18,6 +18,7 @@ import {
     Avatar,
     Badge,
     Box,
+    Loader,
     Menu,
     Title,
     Tooltip,
@@ -29,8 +30,20 @@ import AccountActionsBar from "../components/AccountActionsBar";
 import AccountFilterBar from "../components/AccountFilterBar";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import UpdateAccountModal from "../components/UpdateAccountModal";
+import { ProcessingInterruptedModal } from "../components/ProcessingInterruptedModal";
 import { _Image } from "@/core/const/asset/image";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+    useBatchProcessor,
+    type BatchResult,
+} from "@/core/hooks/useBatchProcessor";
+import { usePreventReload } from "@/core/hooks/usePreventReload";
+import type { AccountLoginResponse } from "@/service/accounts";
+
+// Config: Số lượng request đăng nhập xử lý trong 1 lần (batch size)
+const LOGIN_BATCH_SIZE = 2;
+// Config: Delay (ms) giữa các batch (mặc định: 0)
+const LOGIN_BATCH_DELAY = 20000;
 
 type AccountRow = {
     id: string;
@@ -43,6 +56,7 @@ type AccountRow = {
     status: AccountAuthStatus;
     tokenExpired?: boolean;
     avatarUrl?: string;
+    isProcessing?: boolean; // Flag để hiển thị trạng thái đang xử lý
 };
 
 const AccountManagementPage = () => {
@@ -60,6 +74,21 @@ const AccountManagementPage = () => {
     const [passwordVisibility, setPasswordVisibility] = useState<
         Record<string, boolean>
     >({});
+
+    // State để track các account đang xử lý
+    const [processingAccountIds, setProcessingAccountIds] = useState<
+        Set<string>
+    >(new Set());
+    // State để lưu data từ response (optimistic update)
+    const [updatedAccounts, setUpdatedAccounts] = useState<
+        Map<string, Partial<AccountRow>>
+    >(new Map());
+    // State để lưu results sau khi xử lý xong (để hiển thị trong banner)
+    const [loginResults, setLoginResults] = useState<
+        BatchResult<AccountLoginResponse>[]
+    >([]);
+    // State để hiển thị modal cảnh báo reload
+    const [showReloadWarningModal, setShowReloadWarningModal] = useState(false);
 
     // Reset selection when page changes
     useEffect(() => {
@@ -244,6 +273,28 @@ const AccountManagementPage = () => {
             header: "Trạng thái",
             className: "min-w-[120px]",
             render: ({ row }) => {
+                // Nếu đang xử lý, hiển thị badge "Đang đăng nhập"
+                if (row.isProcessing) {
+                    return (
+                        <Badge
+                            style={{
+                                background: "#E7F5FF",
+                                color: "#1C7ED6",
+                            }}
+                            variant="light"
+                            radius="md"
+                            size="md"
+                            className="font-normal p-3.5! rounded-2xl!"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Loader size={14} color="#1C7ED6" />
+                                <span>Đang đăng nhập</span>
+                            </div>
+                        </Badge>
+                    );
+                }
+
+                // Nếu không đang xử lý, hiển thị badge status bình thường
                 const { style, label } = getStatusBadgeStyle(row.status);
                 return (
                     <Badge
@@ -267,7 +318,11 @@ const AccountManagementPage = () => {
                 return (
                     <Menu shadow="md" width={200}>
                         <Menu.Target>
-                            <ActionIcon variant="subtle" size="lg">
+                            <ActionIcon
+                                variant="subtle"
+                                size="lg"
+                                disabled={isLoggingIn}
+                            >
                                 ⋮
                             </ActionIcon>
                         </Menu.Target>
@@ -293,6 +348,7 @@ const AccountManagementPage = () => {
                                     });
                                     setUpdateModalOpened(true);
                                 }}
+                                disabled={isLoggingIn}
                             >
                                 Chỉnh sửa
                             </Menu.Item>
@@ -305,7 +361,7 @@ const AccountManagementPage = () => {
                                     setIdsToDelete([row.id]);
                                     setConfirmDeleteOpened(true);
                                 }}
-                                disabled={isDeleting}
+                                disabled={isDeleting || isLoggingIn}
                             >
                                 Xóa tài khoản
                             </Menu.Item>
@@ -326,20 +382,39 @@ const AccountManagementPage = () => {
     const rows: AccountRow[] = useMemo(() => {
         if (!accountsData) return [];
         const items = accountsData?.accounts ?? [];
-        return items.map((item) => ({
-            id: String(item.id ?? ""),
-            name: String(item.full_name ?? item.full_name ?? item.email ?? ""),
-            email: String(item.email ?? ""),
-            emailVerified: Boolean(item.email_verified ?? false),
-            phone: String(item.phone_number ?? ""),
-            password: item.password ?? "-",
-            rewardPoints: Number(item.coin_amount ?? 0),
-            status: item.auth_status,
-            avatarUrl: String(
-                (item as any).avatar_url || (item as any).avatar || ""
-            ),
-        }));
-    }, [accountsData]);
+        return items.map((item) => {
+            const accountId = String(item.id ?? "");
+            const baseRow: AccountRow = {
+                id: accountId,
+                name: String(
+                    item.full_name ?? item.full_name ?? item.email ?? ""
+                ),
+                email: String(item.email ?? ""),
+                emailVerified: Boolean(item.email_verified ?? false),
+                phone: String(item.phone_number ?? ""),
+                password: item.password ?? "-",
+                rewardPoints: Number(item.coin_amount ?? 0),
+                status: item.auth_status,
+                avatarUrl: String(
+                    (item as any).avatar_url || (item as any).avatar || ""
+                ),
+                isProcessing: processingAccountIds.has(accountId),
+            };
+
+            // Merge data từ updatedAccounts nếu có
+            const updatedData = updatedAccounts.get(accountId);
+            if (updatedData) {
+                return {
+                    ...baseRow,
+                    ...updatedData,
+                    // Đảm bảo isProcessing được set đúng
+                    isProcessing: processingAccountIds.has(accountId),
+                };
+            }
+
+            return baseRow;
+        });
+    }, [accountsData, processingAccountIds, updatedAccounts]);
 
     const serverTotal = accountsData?.total;
     const apiPagination: PaginationState = {
@@ -373,8 +448,109 @@ const AccountManagementPage = () => {
         queryClient.invalidateQueries({ queryKey: ["accounts"] });
     };
 
-    const { mutateAsync: loginAccount, isPending: isLoggingIn } =
-        useLoginAccountMutation({ skipInvalidate: true });
+    const { mutateAsync: loginAccount } = useLoginAccountMutation({
+        skipInvalidate: true,
+    });
+
+    // Helper function để check login có thành công không
+    const isLoginSuccessful = (data: AccountLoginResponse): boolean => {
+        if (!data?.message) return true; // Nếu không có message, coi như thành công
+        const message = data.message.toLowerCase();
+        return (
+            !message.includes("login unsuccessful") &&
+            !message.includes("login unsuccessfu")
+        );
+    };
+
+    // Helper function để map response data vào AccountRow format
+    const mapResponseToAccountRow = (
+        accountId: string,
+        response: AccountLoginResponse
+    ): Partial<AccountRow> => {
+        const updates: Partial<AccountRow> = {};
+
+        // Nếu login không thành công, update status thành login_failed
+        if (!isLoginSuccessful(response)) {
+            updates.status = "login_failed";
+        } else {
+            // Nếu thành công, có thể update status thành active
+            // (tùy vào logic business, có thể giữ nguyên status hiện tại)
+            updates.status = "active";
+        }
+
+        return updates;
+    };
+
+    // Setup batch processor
+    const { process, processInfo } = useBatchProcessor<
+        string,
+        AccountLoginResponse
+    >(
+        async (accountId) => {
+            return await loginAccount(accountId);
+        },
+        {
+            batchSize: LOGIN_BATCH_SIZE,
+            delayBetweenBatches: LOGIN_BATCH_DELAY,
+            onBatchStart: (batch) => {
+                // Set processingAccountIds cho batch hiện tại
+                setProcessingAccountIds(new Set(batch));
+            },
+            onBatchComplete: (results: BatchResult<AccountLoginResponse>[]) => {
+                // Clear processingAccountIds cho batch vừa xong
+                setProcessingAccountIds(new Set());
+
+                // Update updatedAccounts với data từ response (sử dụng functional update)
+                setUpdatedAccounts((prevUpdatedAccounts) => {
+                    const newUpdatedAccounts = new Map(prevUpdatedAccounts);
+                    results.forEach((result) => {
+                        const accountId = result.input as string;
+                        if (result.success && result.data) {
+                            const updates = mapResponseToAccountRow(
+                                accountId,
+                                result.data
+                            );
+                            newUpdatedAccounts.set(accountId, updates);
+                        } else if (!result.success) {
+                            // Nếu thất bại, update status thành login_failed
+                            newUpdatedAccounts.set(accountId, {
+                                status: "login_failed",
+                            });
+                        }
+                    });
+                    return newUpdatedAccounts;
+                });
+            },
+            onComplete: (allResults: BatchResult<AccountLoginResponse>[]) => {
+                // Lưu results để hiển thị trong banner
+                setLoginResults(allResults);
+
+                // Đếm kết quả thành công/thất bại
+                const success = allResults.filter((result) => {
+                    if (result.success && result.data) {
+                        return isLoginSuccessful(result.data);
+                    }
+                    return false;
+                }).length;
+                const fail = allResults.length - success;
+
+                // Show toast tổng kết
+                if (success > 0)
+                    showSuccessToast(
+                        `Đăng nhập thành công ${success} tài khoản`
+                    );
+                if (fail > 0)
+                    showErrorToast(`Đăng nhập thất bại ${fail} tài khoản`);
+
+                // Invalidate query một lần duy nhất sau tất cả batch
+                queryClient.invalidateQueries({ queryKey: ["accounts"] });
+
+                // Reset states (giữ lại loginResults để hiển thị banner)
+                setProcessingAccountIds(new Set());
+                setUpdatedAccounts(new Map());
+            },
+        }
+    );
 
     const handleLoginAccount = async (ids: string | string[]) => {
         const list = Array.isArray(ids) ? ids : [ids];
@@ -382,29 +558,39 @@ const AccountManagementPage = () => {
             showErrorToast("Vui lòng chọn tài khoản");
             return;
         }
-        const results = await Promise.allSettled(
-            list.map((id) => loginAccount(id))
-        );
-        const success = results.filter((result) => {
-            if (result.status === "fulfilled") {
-                const data = result.value;
-                // Check if message indicates login failure
-                const isLoginUnsuccessful =
-                    data?.message
-                        ?.toLowerCase()
-                        .includes("login unsuccessful") ||
-                    data?.message?.toLowerCase().includes("login unsuccessfu");
-                return !isLoginUnsuccessful;
-            }
-            return false;
-        }).length;
-        const fail = results.length - success;
-        if (success > 0)
-            showSuccessToast(`Đăng nhập thành công ${success} tài khoản`);
-        if (fail > 0) showErrorToast(`Đăng nhập thất bại ${fail} tài khoản`);
-        // Invalidate once after all mutations complete
-        queryClient.invalidateQueries({ queryKey: ["accounts"] });
+
+        // Sử dụng batch processor
+        await process(list);
     };
+
+    const isLoggingIn = processInfo.isProcessing;
+
+    // Hook để ngăn chặn reload khi đang xử lý
+    const { confirmReload } = usePreventReload(isLoggingIn, () => {
+        setShowReloadWarningModal(true);
+    });
+
+    // Check và hiển thị thông báo sau reload nếu quá trình bị hủy
+    useEffect(() => {
+        try {
+            const interrupted = sessionStorage.getItem(
+                "loginProcessingInterrupted"
+            );
+            if (interrupted) {
+                const data = JSON.parse(interrupted);
+                // Check nếu không quá cũ (ví dụ < 1 phút)
+                if (Date.now() - data.timestamp < 60 * 1000) {
+                    showErrorToast(
+                        "Quá trình đăng nhập đã bị hủy do reload trang"
+                    );
+                }
+                // Clear flag
+                sessionStorage.removeItem("loginProcessingInterrupted");
+            }
+        } catch (error) {
+            console.error("Failed to check interrupted processing:", error);
+        }
+    }, []);
 
     const { mutateAsync: syncVoucher, isPending: isSyncingVoucher } =
         useSyncVoucherMutation({ skipInvalidate: true });
@@ -482,6 +668,35 @@ const AccountManagementPage = () => {
                     isDeleting={isDeleting}
                     isLoggingIn={isLoggingIn}
                     isSyncingVoucher={isSyncingVoucher}
+                    processInfo={
+                        isLoggingIn
+                            ? {
+                                  processedCount: processInfo.processedCount,
+                                  totalCount: processInfo.totalCount,
+                                  currentBatch: processInfo.currentBatch,
+                                  totalBatches: processInfo.totalBatches,
+                                  progress: processInfo.progress,
+                              }
+                            : undefined
+                    }
+                    loginResults={
+                        loginResults.length > 0 ? loginResults : undefined
+                    }
+                    accountMap={
+                        rows.length > 0
+                            ? new Map(
+                                  rows.map((row) => [
+                                      row.id,
+                                      {
+                                          name: row.name,
+                                          email: row.email,
+                                          phone: row.phone,
+                                      },
+                                  ])
+                              )
+                            : undefined
+                    }
+                    onCloseBanner={() => setLoginResults([])}
                 />
             </div>
 
@@ -500,7 +715,12 @@ const AccountManagementPage = () => {
                 emptyMessage="Chưa có tài khoản nào."
                 selectable
                 selection={selectedIds}
-                onSelectionChange={setSelectedIds}
+                onSelectionChange={(ids) => {
+                    // Disable selection khi đang xử lý
+                    if (!isLoggingIn) {
+                        setSelectedIds(ids);
+                    }
+                }}
                 showSelectAll
             />
 
@@ -529,6 +749,13 @@ const AccountManagementPage = () => {
                 email={editingAccount?.email || null}
                 phone={editingAccount?.phone || null}
                 onClose={() => setUpdateModalOpened(false)}
+            />
+
+            {/* Modal cảnh báo reload */}
+            <ProcessingInterruptedModal
+                opened={showReloadWarningModal}
+                onClose={() => setShowReloadWarningModal(false)}
+                onConfirm={confirmReload}
             />
         </div>
     );

@@ -95,3 +95,12 @@ export type MyOffersResponse = {
 export type VoucherSyncResponse = {
     message?: string;
 };
+
+export type ClaimVoucherPayload = {
+    account_customer_id: string;
+};
+
+export type ClaimVoucherResponse = {
+    message?: string;
+    data?: unknown;
+};

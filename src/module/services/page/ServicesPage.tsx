@@ -20,6 +20,7 @@ import {
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { CouponDetailModal } from "../components";
+import { getBrandImageUrl } from "@/core/util/imageUrl";
 
 export type Coupon = {
     id: string;
@@ -29,8 +30,8 @@ export type Coupon = {
     price: number;
     validFrom: string;
     validTo: string;
-    category: "all" | "for-you" | "partner";
     brandFeatureImageFileName?: string;
+    listAccounts?: string[];
 };
 
 const ServicesPage = () => {
@@ -80,12 +81,6 @@ const ServicesPage = () => {
         }
     };
 
-    const getBrandImageUrl = (fileName?: string) => {
-        if (!fileName) return "";
-        if (fileName.startsWith("http")) return fileName;
-        return `https://imagedelivery.net/1J0pLjFdKJBzEdIlr1bDRQ/${fileName}/public`;
-    };
-
     const remoteCoupons = useMemo<Coupon[]>(() => {
         const items = vouchers?.data?.vouchers ?? [];
         return items.map((v) => ({
@@ -96,8 +91,8 @@ const ServicesPage = () => {
             price: Number(v.denomination_value) || 0,
             validFrom: formatDate(v.valid_from_date),
             validTo: formatDate(v.expiry_date),
-            category: "all",
             brandFeatureImageFileName: v.brands?.[0]?.logo_id,
+            listAccounts: [v.account_customer_id],
         }));
     }, [vouchers]);
 
@@ -107,7 +102,8 @@ const ServicesPage = () => {
         const list: Coupon[] = [];
         groups.forEach((g) => {
             const brand = g.brands?.[0];
-            g.vouchers?.forEach((v) => {
+
+            g.vouchers.forEach((v) => {
                 list.push({
                     id: v.id,
                     name: g.title,
@@ -116,8 +112,8 @@ const ServicesPage = () => {
                     price: Number(g.denomination_value) || 0,
                     validFrom: formatDate(v.valid_from_date),
                     validTo: formatDate(v.expiry_date),
-                    category: "all",
                     brandFeatureImageFileName: brand?.logo_id,
+                    listAccounts: [v.account_customer_id],
                 });
             });
         });
