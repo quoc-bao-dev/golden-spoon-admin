@@ -155,19 +155,13 @@ export const LoginProcessBanner = ({
                                 radius="xl"
                                 animated
                             />
-                            {processInfo.totalBatches > 1 && (
-                                <Text size="xs" c="dimmed" mt="xs">
-                                    Batch {processInfo.currentBatch}/
-                                    {processInfo.totalBatches}
-                                </Text>
-                            )}
                         </Box>
                     )}
 
                     {/* Results Summary - chỉ hiển thị sau khi xong */}
                     {!isProcessing && results && results.length > 0 && (
                         <Box>
-                            <Group gap="xs" mb="md">
+                            <Group gap="xs">
                                 <Badge
                                     color="green"
                                     variant="light"
@@ -201,129 +195,6 @@ export const LoginProcessBanner = ({
                                     </Badge>
                                 )}
                             </Group>
-
-                            {/* Results List */}
-                            <ScrollArea
-                                h={Math.min(results.length * 60 + 20, 300)}
-                            >
-                                <Stack gap="xs">
-                                    {results.map((result, index) => {
-                                        const accountId =
-                                            result.input as string;
-                                        const accountInfo =
-                                            accountMap?.get(accountId);
-                                        const accountName =
-                                            accountInfo?.name ||
-                                            accountInfo?.phone ||
-                                            accountId;
-                                        const isSuccess =
-                                            result.success &&
-                                            result.data &&
-                                            isLoginSuccessful(result.data);
-
-                                        return (
-                                            <Box
-                                                key={index}
-                                                p="xs"
-                                                style={{
-                                                    borderRadius: "6px",
-                                                    backgroundColor: isSuccess
-                                                        ? "#F0FDF4"
-                                                        : "#FEF2F2",
-                                                    border: "1px solid",
-                                                    borderColor: isSuccess
-                                                        ? "#D1FAE5"
-                                                        : "#FEE2E2",
-                                                }}
-                                            >
-                                                <Group
-                                                    justify="space-between"
-                                                    align="flex-start"
-                                                    gap="sm"
-                                                >
-                                                    <Group
-                                                        gap="xs"
-                                                        style={{ flex: 1 }}
-                                                    >
-                                                        {isSuccess ? (
-                                                            <IconCircleCheck
-                                                                size={18}
-                                                                stroke={1.5}
-                                                                color="var(--mantine-color-green-6)"
-                                                            />
-                                                        ) : (
-                                                            <IconAlertCircle
-                                                                size={18}
-                                                                stroke={1.5}
-                                                                color="var(--mantine-color-red-6)"
-                                                            />
-                                                        )}
-                                                        <Box
-                                                            style={{ flex: 1 }}
-                                                        >
-                                                            <Text
-                                                                size="sm"
-                                                                fw={500}
-                                                                c={
-                                                                    isSuccess
-                                                                        ? "green"
-                                                                        : "red"
-                                                                }
-                                                            >
-                                                                {accountName}
-                                                            </Text>
-                                                            {result.data
-                                                                ?.message && (
-                                                                <Text
-                                                                    size="xs"
-                                                                    c="dimmed"
-                                                                    mt={2}
-                                                                >
-                                                                    {
-                                                                        result
-                                                                            .data
-                                                                            .message
-                                                                    }
-                                                                </Text>
-                                                            )}
-                                                            {result.error && (
-                                                                <Text
-                                                                    size="xs"
-                                                                    c="red"
-                                                                    mt={2}
-                                                                >
-                                                                    {result.error instanceof
-                                                                    Error
-                                                                        ? result
-                                                                              .error
-                                                                              .message
-                                                                        : String(
-                                                                              result.error
-                                                                          )}
-                                                                </Text>
-                                                            )}
-                                                        </Box>
-                                                    </Group>
-                                                    <Badge
-                                                        color={
-                                                            isSuccess
-                                                                ? "green"
-                                                                : "red"
-                                                        }
-                                                        variant="light"
-                                                        size="sm"
-                                                        radius="md"
-                                                    >
-                                                        {isSuccess
-                                                            ? "Thành công"
-                                                            : "Thất bại"}
-                                                    </Badge>
-                                                </Group>
-                                            </Box>
-                                        );
-                                    })}
-                                </Stack>
-                            </ScrollArea>
                         </Box>
                     )}
                 </Stack>
