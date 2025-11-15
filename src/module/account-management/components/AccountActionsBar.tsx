@@ -147,7 +147,7 @@ export const AccountActionsBar = ({
                                 isDeleting || isLoggingIn || isSyncingVoucher
                             }
                         >
-                            Đồng bộ tin tài khoản
+                            Đồng bộ thông tin tài khoản
                         </Button>
                         <Button
                             variant="default"
