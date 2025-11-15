@@ -32,4 +32,6 @@ export const _Icon = {
     "icon-plus": "/icon/common/icon-plus.svg",
     "icon-cart": "/icon/common/icon-cart.svg",
     "icon-fire": "/icon/common/icon-fire.svg",
+    "icon-sync": "/icon/common/icon-sync.svg",
+    "icon-menu-dot": "/icon/common/icon-menu-dot.svg",
 };

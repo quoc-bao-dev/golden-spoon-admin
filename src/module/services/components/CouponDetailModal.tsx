@@ -103,15 +103,25 @@ export const CouponDetailModal = ({
     const { mutate: claimVoucher, isPending: isClaiming } =
         useClaimVoucherMutation({
             onSuccess: (data) => {
-                showSuccessToast(data.message || "Claim voucher thành công!");
-                if (onBuy) {
-                    onBuy(coupon!, 1);
+                if (data.code === 0) {
+                    showSuccessToast(data.message);
+                    if (onBuy) {
+                        onBuy(coupon!, 1);
+                    }
+                    onClose();
+                } else {
+                    const errorMsg =
+                        data.message ||
+                        data.error?.detail ||
+                        "Claim voucher thất bại. Vui lòng thử lại.";
+                    showErrorToast(errorMsg);
                 }
-                onClose();
             },
             onError: (error) => {
+                const responseData = error.response?.data as any;
                 const errorMessage =
-                    (error.response?.data as any)?.message ||
+                    responseData?.message ||
+                    responseData?.error?.detail ||
                     error.message ||
                     "Claim voucher thất bại. Vui lòng thử lại.";
                 showErrorToast(errorMessage);

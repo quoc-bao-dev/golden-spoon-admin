@@ -8,6 +8,7 @@ import {
     AccountSyncResponse,
     UpdateAccountPayload,
     UpdateAccountResponse,
+    DeleteAccountResponse,
 } from "./type";
 
 export const apiAccounts = {
@@ -27,7 +28,9 @@ export const apiAccounts = {
     },
 
     delete: async (id: string) => {
-        const response = await axiosInstant.delete<void>(`accounts/${id}`);
+        const response = await axiosInstant.delete<DeleteAccountResponse>(
+            `accounts/${id}`
+        );
         return response.data;
     },
 

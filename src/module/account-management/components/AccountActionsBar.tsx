@@ -51,14 +51,52 @@ export const AccountActionsBar = ({
 
     const handleSync = async () => {
         if (!selectedIds || selectedIds.length === 0) return;
-        const results = await Promise.all(
+        const results = await Promise.allSettled(
             selectedIds.map((id) => syncAccount(id))
         );
-        const success = results.filter((r) => Boolean(r)).length;
-        const fail = results.length - success;
-        if (success > 0)
-            showSuccessToast(`Đồng bộ thành công ${success} tài khoản`);
-        if (fail > 0) showErrorToast(`Đồng bộ thất bại ${fail} tài khoản`);
+
+        const successResults: string[] = [];
+        const failResults: string[] = [];
+        console.log({ results });
+
+        results.forEach((result, index) => {
+            if (result.status === "fulfilled") {
+                const response = result.value;
+                if (response.code === 0) {
+                    successResults.push(response.message);
+                } else {
+                    failResults.push(
+                        response.message ||
+                            `Tài khoản ${selectedIds[index]}: ${
+                                response.error?.detail || "Lỗi không xác định"
+                            }`
+                    );
+                }
+            } else {
+                failResults.push(
+                    `Tài khoản ${selectedIds[index]}:
+                     ${
+                         result.reason?.response?.data?.message ||
+                         "Lỗi không xác định"
+                     }`
+                );
+            }
+        });
+
+        if (successResults.length > 0) {
+            const uniqueSuccessMessages = [...new Set(successResults)];
+            uniqueSuccessMessages.forEach((msg) => {
+                showSuccessToast(msg);
+            });
+        }
+
+        if (failResults.length > 0) {
+            const uniqueFailMessages = [...new Set(failResults)];
+            uniqueFailMessages.forEach((msg) => {
+                showErrorToast(msg);
+            });
+        }
+
         // Invalidate once after all mutations complete
         queryClient.invalidateQueries({ queryKey: ["accounts"] });
     };
@@ -92,6 +130,16 @@ export const AccountActionsBar = ({
                     <div className="flex gap-2">
                         <Button
                             variant="default"
+                            size="sm"
+                            leftSection={<Icon icon="icon-sync" size={16} />}
+                            onClick={onSyncVoucher}
+                            loading={isSyncingVoucher}
+                            disabled={isDeleting || isLoggingIn || isSyncing}
+                        >
+                            Đồng bộ voucher
+                        </Button>
+                        <Button
+                            variant="default"
                             leftSection={<Icon icon="icon-update" size={16} />}
                             onClick={handleSync}
                             loading={isSyncing}
@@ -104,24 +152,15 @@ export const AccountActionsBar = ({
                         <Button
                             variant="default"
                             size="sm"
-                            leftSection={<Icon icon="icon-update" size={16} />}
-                            onClick={onSyncVoucher}
-                            loading={isSyncingVoucher}
-                            disabled={isDeleting || isLoggingIn || isSyncing}
-                        >
-                            Đồng bộ voucher
-                        </Button>
-                        <Button
-                            variant="default"
-                            size="sm"
                             leftSection={
                                 <Icon icon="icon-user-search" size={16} />
                             }
                             disabled={
-                                isDeleting ||
-                                isLoggingIn ||
-                                isSyncing ||
-                                isSyncingVoucher
+                                // isDeleting ||
+                                // isLoggingIn ||
+                                // isSyncing ||
+                                // isSyncingVoucher
+                                true
                             }
                         >
                             Kiểm tra tài khoản

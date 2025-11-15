@@ -131,7 +131,7 @@ const AccountManagementPage = () => {
         switch (status) {
             case "active":
                 return {
-                    style: { background: "#E6FCF5", color: "#36B37E" },
+                    style: { background: "#E6FCF5", color: "#12B886" },
                     label: "Active",
                 };
             case "inactive":
@@ -302,9 +302,8 @@ const AccountManagementPage = () => {
                     <Badge
                         style={style}
                         variant="light"
-                        radius="md"
                         size="md"
-                        className="font-normal p-3.5! rounded-2xl!"
+                        className="font-normal p-3.5! rounded-[8px]!"
                     >
                         {label}
                     </Badge>
@@ -325,7 +324,7 @@ const AccountManagementPage = () => {
                                 size="lg"
                                 disabled={isLoggingIn}
                             >
-                                ⋮
+                                <Icon icon="icon-menu-dot" size={20} />
                             </ActionIcon>
                         </Menu.Target>
                         <Menu.Dropdown>
@@ -383,7 +382,7 @@ const AccountManagementPage = () => {
 
     const rows: AccountRow[] = useMemo(() => {
         if (!accountsData) return [];
-        const items = accountsData?.accounts ?? [];
+        const items = accountsData?.data.items ?? [];
         return items.map((item) => {
             const accountId = String(item.id ?? "");
             const baseRow: AccountRow = {
@@ -418,7 +417,7 @@ const AccountManagementPage = () => {
         });
     }, [accountsData, processingAccountIds, updatedAccounts]);
 
-    const serverTotal = accountsData?.total;
+    const serverTotal = accountsData?.data.total;
     const apiPagination: PaginationState = {
         page,
         pageSize,
@@ -436,13 +435,50 @@ const AccountManagementPage = () => {
             showErrorToast("Vui lòng chọn tài khoản");
             return;
         }
-        const results = await Promise.all(list.map((id) => deleteAccount(id)));
-        const success = results.length;
-        const fail = results.length - success;
+        const results = await Promise.allSettled(
+            list.map((id) => deleteAccount(id))
+        );
 
-        if (success > 0)
-            showSuccessToast(`Xóa thành công ${success} tài khoản`);
-        if (fail > 0) showErrorToast(`Xóa thất bại ${fail} tài khoản`);
+        const successResults: string[] = [];
+        const failResults: string[] = [];
+
+        results.forEach((result, index) => {
+            if (result.status === "fulfilled") {
+                const response = result.value;
+                if (response.code === 0) {
+                    successResults.push(response.message);
+                } else {
+                    failResults.push(
+                        response.message ||
+                            `Tài khoản ${list[index]}: ${
+                                response.error?.detail || "Lỗi không xác định"
+                            }`
+                    );
+                }
+            } else {
+                failResults.push(
+                    `Tài khoản ${list[index]}: ${
+                        result.reason?.response?.data?.message ||
+                        "Lỗi không xác định"
+                    }`
+                );
+            }
+        });
+
+        if (successResults.length > 0) {
+            const uniqueSuccessMessages = [...new Set(successResults)];
+            uniqueSuccessMessages.forEach((msg) => {
+                showSuccessToast(msg);
+            });
+        }
+
+        if (failResults.length > 0) {
+            const uniqueFailMessages = [...new Set(failResults)];
+            uniqueFailMessages.forEach((msg) => {
+                showErrorToast(msg);
+            });
+        }
+
         setConfirmDeleteOpened(false);
         setIdsToDelete([]);
         setSelectedIds([]);
@@ -456,12 +492,7 @@ const AccountManagementPage = () => {
 
     // Helper function để check login có thành công không
     const isLoginSuccessful = (data: AccountLoginResponse): boolean => {
-        if (!data?.message) return true; // Nếu không có message, coi như thành công
-        const message = data.message.toLowerCase();
-        return (
-            !message.includes("login unsuccessful") &&
-            !message.includes("login unsuccessfu")
-        );
+        return data.code === 0;
     };
 
     // Helper function để map response data vào AccountRow format
@@ -527,22 +558,42 @@ const AccountManagementPage = () => {
                 // Lưu results để hiển thị trong banner
                 setLoginResults(allResults);
 
-                // Đếm kết quả thành công/thất bại
-                const success = allResults.filter((result) => {
+                const successResults: string[] = [];
+                const failResults: string[] = [];
+
+                allResults.forEach((result) => {
                     if (result.success && result.data) {
-                        return isLoginSuccessful(result.data);
+                        if (result.data.code === 0) {
+                            successResults.push(result.data.message);
+                        } else {
+                            failResults.push(
+                                result.data.message ||
+                                    result.data.error?.detail ||
+                                    "Lỗi không xác định"
+                            );
+                        }
+                    } else {
+                        failResults.push(
+                            result.error?.response?.data?.message ||
+                                "Lỗi không xác định"
+                        );
                     }
-                    return false;
-                }).length;
-                const fail = allResults.length - success;
+                });
 
                 // Show toast tổng kết
-                if (success > 0)
-                    showSuccessToast(
-                        `Đăng nhập thành công ${success} tài khoản`
-                    );
-                if (fail > 0)
-                    showErrorToast(`Đăng nhập thất bại ${fail} tài khoản`);
+                if (successResults.length > 0) {
+                    const uniqueSuccessMessages = [...new Set(successResults)];
+                    uniqueSuccessMessages.forEach((msg) => {
+                        showSuccessToast(msg);
+                    });
+                }
+
+                if (failResults.length > 0) {
+                    const uniqueFailMessages = [...new Set(failResults)];
+                    uniqueFailMessages.forEach((msg) => {
+                        showErrorToast(msg);
+                    });
+                }
 
                 // Invalidate query một lần duy nhất sau tất cả batch
                 queryClient.invalidateQueries({ queryKey: ["accounts"] });
@@ -606,22 +657,47 @@ const AccountManagementPage = () => {
         const results = await Promise.allSettled(
             list.map((id) => syncVoucher(id))
         );
-        const success = results.filter((result) => {
+
+        const successResults: string[] = [];
+        const failResults: string[] = [];
+
+        results.forEach((result, index) => {
             if (result.status === "fulfilled") {
-                const data = result.value;
-                // Check if message indicates sync failure
-                const isSyncUnsuccessful =
-                    data?.message?.toLowerCase().includes("unsuccessful") ||
-                    data?.message?.toLowerCase().includes("unsuccessfu");
-                return !isSyncUnsuccessful;
+                const response = result.value;
+                if (response.code === 0) {
+                    successResults.push(response.message);
+                } else {
+                    failResults.push(
+                        response.message ||
+                            `Tài khoản ${list[index]}: ${
+                                response.error?.detail || "Lỗi không xác định"
+                            }`
+                    );
+                }
+            } else {
+                failResults.push(
+                    `Tài khoản ${list[index]}: ${
+                        result.reason?.response?.data?.message ||
+                        "Lỗi không xác định"
+                    }`
+                );
             }
-            return false;
-        }).length;
-        const fail = results.length - success;
-        if (success > 0)
-            showSuccessToast(`Đồng bộ voucher thành công ${success} tài khoản`);
-        if (fail > 0)
-            showErrorToast(`Đồng bộ voucher thất bại ${fail} tài khoản`);
+        });
+
+        if (successResults.length > 0) {
+            const uniqueSuccessMessages = [...new Set(successResults)];
+            uniqueSuccessMessages.forEach((msg) => {
+                showSuccessToast(msg);
+            });
+        }
+
+        if (failResults.length > 0) {
+            const uniqueFailMessages = [...new Set(failResults)];
+            uniqueFailMessages.forEach((msg) => {
+                showErrorToast(msg);
+            });
+        }
+
         // Invalidate once after all mutations complete
         queryClient.invalidateQueries({ queryKey: ["vouchers"] });
         queryClient.invalidateQueries({ queryKey: ["accounts"] });

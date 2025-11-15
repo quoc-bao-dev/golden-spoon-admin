@@ -9,6 +9,7 @@ import {
     AccountSyncResponse,
     UpdateAccountPayload,
     UpdateAccountResponse,
+    DeleteAccountResponse,
 } from "./type";
 
 export const useCreateAccountMutation = ({
@@ -37,9 +38,9 @@ export const useDeleteAccountMutation = ({
     onSuccess,
     onError,
     skipInvalidate = false,
-}: MutationCallbacks<void> = {}) => {
+}: MutationCallbacks<DeleteAccountResponse> = {}) => {
     const queryClient = useQueryClient();
-    return useMutation<void, AxiosError, string>({
+    return useMutation<DeleteAccountResponse, AxiosError, string>({
         mutationFn: apiAccounts.delete,
         onSuccess: (data) => {
             onSuccess?.(data);

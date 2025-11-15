@@ -147,12 +147,6 @@ export function DataTable<T>(props: DataTableProps<T>) {
                     >
                         <Table.Thead c={"gray.4"}>
                             <Table.Tr>
-                                <Table.Th
-                                    className="text-xs font-medium w-8 bg-[#F1F3F5]! text-center align-middle"
-                                    py={"lg"}
-                                >
-                                    No.
-                                </Table.Th>
                                 {selectable && (
                                     <Table.Th
                                         className="text-xs font-medium w-10 bg-[#F1F3F5]! align-middle"
@@ -160,13 +154,20 @@ export function DataTable<T>(props: DataTableProps<T>) {
                                     >
                                         {showSelectAll && (
                                             <Checkbox
-                                                color="brand"
+                                                color="#00A76F"
+                                                radius={6}
                                                 checked={allSelectedOnPage}
                                                 onChange={() => toggleAll()}
                                             />
                                         )}
                                     </Table.Th>
                                 )}
+                                <Table.Th
+                                    className="text-xs font-medium w-8 bg-[#F1F3F5]! text-center align-middle"
+                                    py={"lg"}
+                                >
+                                    No.
+                                </Table.Th>
                                 {columns.map((col) => (
                                     <Table.Th
                                         key={col.key}
@@ -240,7 +241,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                                       return (
                                           <Table.Tr
                                               key={id}
-                                              className="border-b! border-dashed border-gray-200!  "
+                                              className="border-b! border-dashed border-gray-200! hover:bg-brand-50!"
                                               onClick={(e) => {
                                                   if (
                                                       selectable &&
@@ -262,9 +263,6 @@ export function DataTable<T>(props: DataTableProps<T>) {
                                                       : undefined,
                                               }}
                                           >
-                                              <Table.Td className="text-sm text-gray-900 align-middle text-center">
-                                                  {startIndex + rowIndex + 1}
-                                              </Table.Td>
                                               {selectable && (
                                                   <Table.Td
                                                       className="align-middle"
@@ -281,7 +279,8 @@ export function DataTable<T>(props: DataTableProps<T>) {
                                                       }}
                                                   >
                                                       <Checkbox
-                                                          color="brand"
+                                                          color="#00A76F"
+                                                          radius={6}
                                                           checked={selected.includes(
                                                               id
                                                           )}
@@ -291,6 +290,9 @@ export function DataTable<T>(props: DataTableProps<T>) {
                                                       />
                                                   </Table.Td>
                                               )}
+                                              <Table.Td className="text-sm text-gray-900 align-middle text-center">
+                                                  {startIndex + rowIndex + 1}
+                                              </Table.Td>
                                               {columns.map((col) => (
                                                   <Table.Td
                                                       key={`${id}-${col.key}`}

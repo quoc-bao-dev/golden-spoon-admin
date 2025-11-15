@@ -98,38 +98,39 @@ export const AddAccountModal = ({
         let successCount = 0;
         let failCount = 0;
         const newErrors = Array(lines.length).fill("");
+        const successResults: string[] = [];
+        const failResults: string[] = [];
 
         results.forEach((res) => {
             if (res.ok) {
-                successCount += 1;
+                const response = res.data;
+                if (response.code === 0) {
+                    successCount += 1;
+                    successResults.push(response.message);
+                } else {
+                    failCount += 1;
+                    const errorMsg =
+                        response.message ||
+                        response.error?.detail ||
+                        "Không xác định";
+                    newErrors[res.index] = errorMsg;
+                    failResults.push(errorMsg);
+                }
             } else {
                 failCount += 1;
                 let message = "Không xác định";
                 if (res.err instanceof AxiosError) {
-                    const status = res.err.response?.status;
-                    const data = res.err.response?.data as any;
-                    if (status === 422) {
-                        // Validation error, e.g. password too short
-                        const detail = data?.detail;
-                        if (Array.isArray(detail) && detail.length > 0) {
-                            const first = detail[0];
-                            // Prefer server message
-                            message = first?.msg || "Dữ liệu không hợp lệ";
-                        } else {
-                            message = "Dữ liệu không hợp lệ (422)";
-                        }
-                    } else if (status === 400) {
-                        // e.g. Phone number already exists
-                        message = data?.detail || "Yêu cầu không hợp lệ (400)";
-                    } else if (status) {
-                        message = `Lỗi ${status}`;
-                    } else {
-                        message = res.err.message || "Lỗi mạng";
-                    }
+                    const responseData = res.err.response?.data as any;
+                    message =
+                        responseData?.message ||
+                        responseData?.error?.detail ||
+                        res.err.message ||
+                        "Lỗi mạng";
                 } else if (res.err instanceof Error) {
                     message = res.err.message;
                 }
                 newErrors[res.index] = message;
+                failResults.push(message);
             }
         });
 
@@ -141,11 +142,18 @@ export const AddAccountModal = ({
         }
 
         // Summary toasts
-        if (successCount > 0) {
-            showSuccessToast(`Tạo thành công ${successCount} tài khoản`);
+        if (successResults.length > 0) {
+            const uniqueSuccessMessages = [...new Set(successResults)];
+            uniqueSuccessMessages.forEach((msg) => {
+                showSuccessToast(msg);
+            });
         }
-        if (failCount > 0) {
-            showErrorToast(`Thất bại ${failCount} tài khoản`);
+
+        if (failResults.length > 0) {
+            const uniqueFailMessages = [...new Set(failResults)];
+            uniqueFailMessages.forEach((msg) => {
+                showErrorToast(msg);
+            });
         }
 
         onSubmit?.({
@@ -219,7 +227,7 @@ export const AddAccountModal = ({
                 {/* show error message */}
                 {lineErrors.some((m) => m) && (
                     <div className="bg-red-50 rounded-md p-2 border border-red-200">
-                        <ScrollArea h={200}>
+                        <ScrollArea h={100}>
                             <Stack gap={4}>
                                 {lineErrors.map((msg, idx) =>
                                     msg ? (

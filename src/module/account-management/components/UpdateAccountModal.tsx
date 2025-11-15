@@ -41,15 +41,28 @@ export const UpdateAccountModal = ({
         }
         setError("");
         try {
-            await updateAccount({ id: accountId, password });
-            showSuccessToast("Cập nhật thông tin người dùng thành công");
-            setPassword("");
-            onClose();
+            const response = await updateAccount({ id: accountId, password });
+            if (response.code === 0) {
+                showSuccessToast(response.message);
+                setPassword("");
+                onClose();
+            } else {
+                const errorMsg =
+                    response.message ||
+                    response.error?.detail ||
+                    "Cập nhật thông tin người dùng thất bại";
+                showErrorToast(errorMsg);
+                setServerError(errorMsg);
+            }
         } catch (e) {
             if (e instanceof AxiosError) {
-                const msg = (e.response?.data as any)?.detail?.[0]?.msg;
-                showErrorToast(msg || "Cập nhật thông tin người dùng thất bại");
-                setServerError(msg || "");
+                const responseData = e.response?.data as any;
+                const errorMsg =
+                    responseData?.message ||
+                    responseData?.error?.detail ||
+                    "Cập nhật thông tin người dùng thất bại";
+                showErrorToast(errorMsg);
+                setServerError(errorMsg);
             } else {
                 showErrorToast("Cập nhật thông tin người dùng thất bại");
             }

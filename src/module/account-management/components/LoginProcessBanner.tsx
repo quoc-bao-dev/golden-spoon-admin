@@ -66,12 +66,7 @@ export const LoginProcessBanner = ({
 
     // Helper để check login có thành công không
     const isLoginSuccessful = (data?: AccountLoginResponse): boolean => {
-        if (!data?.message) return true;
-        const message = data.message.toLowerCase();
-        return (
-            !message.includes("login unsuccessful") &&
-            !message.includes("login unsuccessfu")
-        );
+        return data?.code === 0;
     };
 
     const successCount =

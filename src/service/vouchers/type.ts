@@ -43,6 +43,8 @@ export type VouchersResponse = {
         vouchers: VoucherItem[];
     };
     message: string;
+    code: number;
+    error: null;
 };
 
 export type GroupVoucherLite = {
@@ -83,6 +85,7 @@ export type MyOffersParams = {
 };
 
 export type MyOffersResponse = {
+    code: number;
     data: {
         total: number;
         page: number;
@@ -90,17 +93,43 @@ export type MyOffersResponse = {
         groups: VoucherGroup[];
     };
     message: string;
+    error: null;
+};
+
+export type VoucherSyncError = {
+    type: string;
+    detail: string;
 };
 
 export type VoucherSyncResponse = {
-    message?: string;
+    code: number;
+    message: string;
+    data: {
+        success: boolean;
+        account_id: string;
+        vouchers_synced: number;
+        new_vouchers: number;
+        updated_vouchers: number;
+    } | null;
+    error: VoucherSyncError | null;
 };
 
 export type ClaimVoucherPayload = {
     account_customer_id: string;
 };
 
+export type ClaimVoucherError = {
+    type: string;
+    detail: string;
+};
+
 export type ClaimVoucherResponse = {
-    message?: string;
-    data?: unknown;
+    code: number;
+    message: string;
+    data: {
+        success: boolean;
+        voucher_id: string;
+        account_customer_id: string;
+    } | null;
+    error: ClaimVoucherError | null;
 };
