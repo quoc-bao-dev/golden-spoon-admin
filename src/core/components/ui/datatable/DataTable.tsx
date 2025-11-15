@@ -46,6 +46,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
         defaultSelection,
         onSelectionChange,
         showSelectAll,
+        disabled,
     } = props;
 
     const rowIdGetter: GetRowId<T> = useMemo(
@@ -333,6 +334,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                     )}
                     radius="md"
                     size="sm"
+                    disabled={disabled}
                 />
                 <div className="flex items-center gap-2 text-gray-600">
                     <span>Hiển thị số hàng:</span>
@@ -346,6 +348,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                         data={["5", "10", "50", "100", "500"]}
                         className="w-[72px]"
                         comboboxProps={{ withinPortal: false }}
+                        disabled={disabled}
                     />
                     <span>trên {pagination.total} kết quả</span>
                 </div>

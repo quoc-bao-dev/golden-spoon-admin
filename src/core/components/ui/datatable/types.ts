@@ -46,6 +46,5 @@ export type DataTableProps<T> = {
     defaultSelection?: string[];
     onSelectionChange?: (ids: string[]) => void;
     showSelectAll?: boolean;
+    disabled?: boolean;
 };
-
-

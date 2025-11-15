@@ -800,6 +800,7 @@ const AccountManagementPage = () => {
                     }
                 }}
                 showSelectAll
+                disabled={isDeleting || isLoggingIn || isSyncingVoucher}
             />
 
             {/* Add Account Modal */}
